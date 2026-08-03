@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VipRide Orlando</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter Tight', system-ui, sans-serif; background: #070C18; color: #F3F6FB; display: flex; justify-content: center; min-height: 100vh; }
+    button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+    #app { width: 100%; max-width: 420px; background: #0D1730; min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    @media (min-width: 520px) {
+      body { align-items: center; padding: 24px 0; background: radial-gradient(1000px 500px at 50% 0%, #1A2A4E, #070C18); }
+      #app { min-height: 0; height: 844px; border-radius: 34px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); border: 8px solid #1A2340; }
+    }
+    .escondido { display: none !important; }
+
+    /* ===== TOPO ===== */
+    #topo { padding: 16px 18px 0; flex-shrink: 0; position: relative; z-index: 10; }
+    #util { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    #menuBtn { width: 38px; height: 38px; border-radius: 50%; background: #152342; display: grid; place-items: center; font-size: 20px; color: #8FA9D4; transition: 0.2s; }
+    #menuBtn:hover { background: #1E3055; }
+    #langs { display: flex; gap: 4px; background: #152342; border-radius: 16px; padding: 4px; }
+    #langs button { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; color: #8FA9D4; transition: 0.15s; }
+    #langs button[aria-pressed="true"] { background: #E3B23C; color: #20180A; }
+    #brand { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    #logo { width: 44px; height: 44px; border-radius: 50%; background: #E3B23C; color: #20180A; display: grid; place-items: center; font-size: 22px; box-shadow: 0 0 20px rgba(227,178,60,0.2); }
+    #brand h1 { font-family: 'Fraunces', Georgia, serif; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+    #brand small { display: block; color: #8FA9D4; font-size: 11px; margin-top: 2px; font-family: 'Inter Tight', sans-serif; }
+    #tagline { font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 600; margin: 14px 0 6px; line-height: 1.2; max-width: 18ch; }
+    #tagline em { font-style: italic; color: #E3B23C; }
+
+    /* ===== ABAS ===== */
+    #tabs { display: flex; gap: 8px; padding: 10px 18px 6px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+    #tabs::-webkit-scrollbar { display: none; }
+    #tabs button { flex: 1; min-width: 120px; background: #152342; border: 1px solid #2A3E67; border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 600; color: #8FA9D4; display: flex; gap: 6px; align-items: center; justify-content: center; transition: 0.15s; }
+    #tabs button[aria-pressed="true"] { background: #E3B23C; border-color: #E3B23C; color: #20180A; }
+
+    /* ===== CONTEÚDO PRINCIPAL ===== */
+    #conteudoReserva { flex: 1; overflow-y: auto; padding: 12px 18px 190px; -webkit-overflow-scrolling: touch; display: block; }
+    #conteudoReserva h2 { font-family: 'Fraunces', Georgia, serif; font-size: 16px; font-weight: 700; margin: 14px 0 10px; color: #F3F6FB; }
+    #conteudoReserva label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: #8FA9D4; margin: 14px 0 6px; }
+    #conteudoReserva input[type="text"], #conteudoReserva input[type="date"] { width: 100%; background: #152342; border: 1.5px solid #2A3E67; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #F3F6FB; transition: 0.2s; outline: none; }
+    #conteudoReserva input:focus { border-color: #E3B23C; box-shadow: 0 0 0 3px rgba(227,178,60,0.15); }
+    #conteudoReserva input::placeholder { color: #5E7BAE; }
+
+    /* ===== CARROS ===== */
+    #carrosDiaria { display: grid; gap: 10px; }
+    .carro { display: flex; align-items: center; gap: 12px; background: #152342; border: 1.5px solid #2A3E67; border-radius: 14px; padding: 14px; text-align: left; transition: 0.15s; cursor: pointer; }
+    .carro[aria-selected="true"] { border-color: #E3B23C; background: rgba(227,178,60,0.08); }
+    .carro .icone { font-size: 26px; }
+    .carro .info { flex: 1; }
+    .carro .info strong { display: block; font-size: 15px; font-weight: 600; }
+    .carro .info small { color: #8FA9D4; font-size: 12px; }
+    .carro .preco { color: #E3B23C; font-weight: 700; font-size: 15px; }
+
+    /* ===== DESTAQUE ===== */
+    .destaque { background: rgba(227,178,60,0.06); border: 1px solid rgba(227,178,60,0.2); border-radius: 12px; padding: 12px 14px; margin: 12px 0 16px; font-size: 13px; color: #F5D07E; line-height: 1.6; }
+    .destaque strong { color: #E3B23C; }
+
+    /* ===== CONTROLE HORAS ===== */
+    .controlador-horas { display: flex; align-items: center; justify-content: space-between; background: #152342; border: 1.5px solid #2A3E67; border-radius: 12px; padding: 8px 12px; }
+    .controlador-horas button { width: 30px; height: 30px; border-radius: 8px; background: #1E3055; font-size: 16px; font-weight: 700; display: grid; place-items: center; transition: 0.15s; }
+    .controlador-horas button:hover { background: #2A3E67; }
+    .controlador-horas span { font-size: 15px; font-weight: 700; min-width: 20px; text-align: center; }
+    .controlador-horas small { display: block; color: #8FA9D4; font-size: 10px; margin-top: 4px; text-align: center; }
+
+    /* ===== CALENDÁRIO ===== */
+    .calendario-duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .calendario-duplo input { width: 100%; }
+
+    /* ===== MAPA ===== */
+    #mapWrap { height: 120px; border-radius: 12px; overflow: hidden; border: 1px solid #2A3E67; margin: 10px 0; }
+    #map { height: 100%; width: 100%; background: #152342; }
+
+    /* ===== RODAPÉ DA RESERVA ===== */
+    #quote { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, rgba(13,23,48,0), #0D1730 25%); padding: 20px 18px calc(12px + env(safe-area-inset-bottom)); z-index: 10; }
+    #cardTotal { background: #1E3055; border: 1px solid #2A3E67; border-radius: 18px; padding: 16px 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+    #cardTotal small { font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: #8FA9D4; display: block; margin-bottom: 2px; }
+    #cardTotal strong { font-family: 'Fraunces', Georgia, serif; font-size: 32px; font-weight: 800; color: #E3B23C; line-height: 0.95; }
+    #detalhes { text-align: right; font-size: 12px; color: #8FA9D4; line-height: 1.4; }
+    #btnReservar { width: 100%; background: #E3B23C; color: #20180A; border-radius: 14px; padding: 15px; font-weight: 700; font-size: 16px; margin-top: 14px; transition: 0.2s; }
+    #btnReservar:hover { transform: scale(1.01); box-shadow: 0 4px 20px rgba(227,178,60,0.25); }
+    #nota { text-align: center; font-size: 11px; color: #8FA9D4; margin-top: 8px; }
+
+    /* ===== MENU ===== */
+    #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #menuOverlay.aberto { opacity: 1; pointer-events: auto; }
+    #menuDrawer { position: absolute; left: 0; top: 0; bottom: 0; width: 280px; background: #0D1730; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); padding: 20px 16px; border-right: 1px solid #2A3E67; box-shadow: 4px 0 30px rgba(0,0,0,0.5); }
+    #menuOverlay.aberto #menuDrawer { transform: translateX(0); }
+    #fecharMenu { width: 34px; height: 34px; border-radius: 50%; background: #152342; display: grid; place-items: center; font-size: 16px; margin-left: auto; transition: 0.15s; color: #8FA9D4; }
+    #fecharMenu:hover { background: #E3B23C; color: #20180A; }
+    #menuDrawer h2 { font-family: 'Fraunces', Georgia, serif; font-size: 20px; font-weight: 700; color: #F3F6FB; margin: 18px 0 20px; letter-spacing: -0.01em; }
+    #menuDrawer ul { list-style: none; }
+    #menuDrawer li button { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #2A3E67; font-size: 15px; color: #F3F6FB; width: 100%; text-align: left; transition: 0.15s; }
+    #menuDrawer li button:hover { color: #E3B23C; padding-left: 8px; }
+    #menuDrawer li button .icon { font-size: 20px; width: 24px; text-align: center; color: #8FA9D4; }
+    #menuDrawer li button:hover .icon { color: #E3B23C; }
+    #menuDrawer li button.perigo { color: #ff6b6b; border-bottom-color: rgba(255, 107, 107, 0.2); }
+    #menuDrawer li button.perigo:hover { color: #ff4444; }
+
+    /* ===== TELA DE CONFIRMAÇÃO ===== */
+    #telaConfirmacao { position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 40; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; backdrop-filter: blur(4px); }
+    #telaConfirmacao.ativa { display: flex; }
+    #cardConfirmacao { background: #0D1730; border: 1px solid #E3B23C; border-radius: 24px; padding: 30px 24px; max-width: 100%; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; max-height: 90vh; overflow-y: auto; }
+    #cardConfirmacao .icone-grande { font-size: 48px; background: #1E3055; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 2px solid #E3B23C; }
+    #cardConfirmacao h2 { font-family: 'Fraunces', Georgia, serif; color: #E3B23C; font-size: 24px; margin-bottom: 6px; }
+    #cardConfirmacao .subtitulo { color: #8FA9D4; font-size: 14px; margin-bottom: 20px; }
+    #cardConfirmacao .linha-detalhe { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #2A3E67; color: #F3F6FB; font-size: 14px; text-align: left; }
+    #cardConfirmacao .linha-detalhe span:last-child { color: #E3B23C; font-weight: 600; text-align: right; }
+    #cardConfirmacao .linha-detalhe.total { border-bottom: none; margin-top: 8px; font-size: 18px; font-weight: 700; }
+    #cardConfirmacao .linha-detalhe.total span:last-child { font-size: 24px; color: #E3B23C; }
+    
+    /* Área do Motorista na Confirmação */
+    #areaMotorista { margin-top: 20px; padding: 16px; background: #152342; border-radius: 14px; border: 1px solid #2A3E67; text-align: left; display: flex; gap: 14px; align-items: center; }
+    #areaMotorista .foto-motorista { width: 50px; height: 50px; border-radius: 50%; background: #1E3055; display: grid; place-items: center; font-size: 24px; color: #E3B23C; }
+    #areaMotorista .info-motorista { flex: 1; }
+    #areaMotorista .info-motorista strong { display: block; font-size: 15px; color: #F3F6FB; }
+    #areaMotorista .info-motorista small { display: block; color: #8FA9D4; font-size: 12px; line-height: 1.4; }
+    #areaMotorista .info-motorista .placa { color: #E3B23C; font-weight: 600; margin-top: 2px; }
+
+    #areaWhatsApp { margin-top: 12px; padding: 10px; background: rgba(37,211,102,0.08); border: 1px solid rgba(37,211,102,0.3); border-radius: 12px; display: flex; align-items: center; gap: 10px; justify-content: center; color: #F3F6FB; font-size: 13px; line-height: 1.4; }
+    #areaWhatsApp .whats-icon { font-size: 24px; color: #25D366; }
+    #btnFecharConfirmacao { width: 100%; background: #152342; color: #F3F6FB; border-radius: 14px; padding: 15px; font-weight: 600; font-size: 16px; margin-top: 16px; border: 1px solid #2A3E67; transition: 0.2s; }
+    #btnFecharConfirmacao:hover { background: #2A3E67; }
+
+    /* ===== TELAS DO MENU ===== */
+    #conteudoMenu { display: none; flex: 1; padding: 12px 18px 30px; overflow-y: auto; background: #0D1730; }
+    #conteudoMenu.ativo { display: block; }
+    #conteudoMenu .voltar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: #8FA9D4; font-size: 14px; cursor: pointer; width: fit-content; }
+    #conteudoMenu .voltar:hover { color: #E3B23C; }
+    #conteudoMenu h2 { font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #E3B23C; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: #8FA9D4; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    #conteudoMenu input[type="text"], #conteudoMenu input[type="email"], #conteudoMenu input[type="tel"] { width: 100%; background: #152342; border: 1.5px solid #2A3E67; border-radius: 12px; padding: 16px 14px; font-size: 16px; color: #F3F6FB; transition: 0.2s; outline: none; }
+    #conteudoMenu input:focus { border-color: #E3B23C; box-shadow: 0 0 0 3px rgba(227,178,60,0.15); }
+    #conteudoMenu input::placeholder { color: #5E7BAE; }
+    .btn-gold { width: 100%; background: #E3B23C; color: #20180A; border-radius: 14px; padding: 16px; font-weight: 700; font-size: 16px; margin-top: 10px; transition: 0.2s; }
+    .btn-gold:hover { transform: scale(1.01); box-shadow: 0 4px 20px rgba(227,178,60,0.25); }
+    .btn-danger { width: 100%; background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; border-radius: 14px; padding: 16px; font-weight: 700; font-size: 16px; margin-top: 20px; transition: 0.2s; }
+    .btn-danger:hover { background: #ff6b6b; color: #fff; }
+    .text-body { color: #F3F6FB; font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
+    .text-muted { color: #8FA9D4; font-size: 13px; line-height: 1.5; }
+    
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="topo">
+      <div id="util">
+        <button id="menuBtn" aria-label="Abrir menu">☰</button>
+        <div id="langs">
+          <button data-lang="pt" aria-pressed="true">PT</button>
+          <button data-lang="en">EN</button>
+          <button data-lang="es">ES</button>
+        </div>
+      </div>
+      <div id="brand">
+        <div id="logo">✦</div>
+        <div>
+          <h1>VipRide Orlando</h1>
+          <small id="subTitulo">Transporte executivo particular</small>
+        </div>
+      </div>
+      <p id="tagline"><span id="tagA">Reserve seu</span> <em id="tagB">translado</em> <span id="tagC">com conforto.</span></p>
+    </header>
+
+    <div id="conteudoReserva">
+      <nav id="tabs">
+        <button data-tab="daily" aria-pressed="true"><span id="tabDaily">🏎️ Diária</span></button>
+        <button data-tab="transfer"><span id="tabTransfer">🚖 Translado</span></button>
+      </nav>
+
+      <!-- DIÁRIA -->
+      <section id="daily">
+        <h2 id="chooseCar">Escolha o veículo</h2>
+        <div id="carrosDiaria">
+          <div class="carro" data-carro="sedan" aria-selected="true">
+            <span class="icone">🚗</span>
+            <div class="info"><strong id="nomeSedan">Sedã 5 lugares</strong><small id="descSedan">Conforto e elegância</small></div>
+            <span class="preco" id="precoSedan">$350/dia</span>
+          </div>
+          <div class="carro" data-carro="suv">
+            <span class="icone">🚙</span>
+            <div class="info"><strong id="nomeSuv">SUV 7 lugares</strong><small id="descSuv">Espaço para toda a família</small></div>
+            <span class="preco" id="precoSuv">$450/dia</span>
+          </div>
+        </div>
+        <div class="destaque" id="dailyInfo">
+          <strong>✓</strong> Motorista exclusivo das 8h às 23h<br>
+          <strong>✓</strong> Pedágio e combustível inclusos<br>
+          <strong>✓</strong> 200km/dia · $1 por km extra
+        </div>
+        <label id="labelDias">Selecione os dias</label>
+        <div class="calendario-duplo">
+          <input type="date" id="dataInicio">
+          <input type="date" id="dataFim">
+        </div>
+        <small style="color: #8FA9D4; font-size: 11px; margin-top: 6px; display: block;" id="msgMultiplicador">Valor multiplicado pelos dias escolhidos</small>
+      </section>
+
+      <!-- TRANSLADO -->
+      <section id="transfer" class="escondido">
+        <label id="labelPartida">Endereço de partida</label>
+        <input type="text" id="partida" placeholder="Ex: MCO Airport">
+        <label id="labelChegada">Endereço de chegada</label>
+        <input type="text" id="chegada" placeholder="Ex: 8000 Poinciana Blvd">
+        
+        <!-- MAPA -->
+        <div id="mapWrap"><div id="map"></div></div>
+
+        <!-- NÚMERO DO VOO -->
+        <label>Número do voo (opcional)</label>
+        <input type="text" id="voo" placeholder="Ex: AA 1234" style="margin-bottom: 12px;">
+        <small style="color: #8FA9D4; font-size: 10px; display: block; margin-top: -6px;">Se preencher, monitoraremos seu voo em tempo real.</small>
+
+        <label id="labelHoras">Duração estimada (horas)</label>
+        <div class="controlador-horas">
+          <button data-ajuste="-1">−</button>
+          <span id="horasTransfer">1</span>
+          <button data-ajuste="1">+</button>
+        </div>
+        <small style="display:block; text-align:center; color:#8FA9D4; font-size:10px; margin-top:4px;" id="msgMinimo">* Reserva mínima de 1 hora</small>
+        <div class="destaque" style="margin-top: 8px;" id="transferInfo">
+          <strong>$40/hora</strong> + <strong>$1,50/km</strong><br>
+          Valor calculado com base na distância estimada
+        </div>
+      </section>
+
+      <footer id="quote">
+        <div id="cardTotal">
+          <div>
+            <small id="labelTotal">Valor total</small>
+            <strong id="valorTotal">$350</strong>
+          </div>
+          <div id="detalhes">
+            <span id="resumoServico">Diária · Sedã</span><br>
+            <span id="resumoDias">1 dia</span>
+          </div>
+        </div>
+        <button id="btnReservar"><span id="btnTexto">Reservar</span></button>
+        <p id="nota">Preço fechado. Sem surpresas.</p>
+      </footer>
+    </div>
+
+    <!-- CONFIRMAÇÃO -->
+    <div id="telaConfirmacao">
+      <div id="cardConfirmacao">
+        <div class="icone-grande">✅</div>
+        <h2 id="confTitulo">Reserva Confirmada!</h2>
+        <p class="subtitulo" id="confSubtitulo">Agendamento realizado com sucesso.</p>
+        <div class="linha-detalhe"><span id="confServico">Serviço</span><span id="confValorServico">Diária</span></div>
+        <div class="linha-detalhe"><span id="confVeiculo">Veículo</span><span id="confValorVeiculo">Sedã 5 lugares</span></div>
+        <div class="linha-detalhe"><span id="confPeriodo">Período</span><span id="confValorPeriodo">2 dias</span></div>
+        <div class="linha-detalhe total"><span id="confTotal">Total</span><span id="confValorTotal">$700</span></div>
+        
+        <div id="areaMotorista">
+          <div class="foto-motorista">👨‍✈️</div>
+          <div class="info-motorista">
+            <strong id="confMotoristaNome">Michael Anderson</strong>
+            <small id="confMotoristaBio">Fluente em inglês e espanhol · 8 anos de experiência · Especialista em rotas de Orlando.</small>
+            <small class="placa" id="confMotoristaPlaca">🚗 Chevrolet Suburban · Placa: ORL-2024</small>
+          </div>
+        </div>
+
+        <div id="areaWhatsApp">
+          <span class="whats-icon">💬</span>
+          <span id="confWhatsApp">Um especialista entrará em contato via WhatsApp para finalizar os detalhes.</span>
+        </div>
+
+        <button id="btnFecharConfirmacao">OK, entendi</button>
+      </div>
+    </div>
+
+    <!-- MENU E TELAS -->
+    <div id="conteudoMenu">
+      <div class="voltar" id="btnVoltarMenu"><span>←</span> <span id="txtVoltar">Voltar</span></div>
+      <div id="telaPerfil">
+        <h2 id="titPerfil">Cadastrar Perfil</h2>
+        <div class="form-group"><label>Nome completo</label><input type="text" id="inputNome" placeholder="Digite seu nome"></div>
+        <div class="form-group"><label>E-mail</label><input type="email" id="inputEmail" placeholder="exemplo@email.com"></div>
+        <div class="form-group"><label>Confirmar E-mail</label><input type="email" id="inputEmailConfirm" placeholder="Digite o e-mail novamente"></div>
+        <div class="form-group"><label>País</label><input type="text" id="inputPais" placeholder="Ex: Estados Unidos"></div>
+        <div class="form-group"><label>Telefone</label><input type="tel" id="inputTel" placeholder="+1 (XXX) XXX-XXXX"></div>
+        <button class="btn-gold" id="salvarPerfil">Salvar dados</button>
+      </div>
+      <div id="telaSobre" class="escondido">
+        <h2 id="titSobre">Sobre o App</h2>
+        <div class="text-body"><strong>VipRide Orlando</strong> é a solução ideal para transporte executivo de alto padrão na Flórida.</div>
+        <div class="text-muted">Oferecemos serviços de translado com motoristas particulares, carros de luxo e total transparência nos preços.<br><br><strong>Versão:</strong> 1.0.0<br><strong>Contato:</strong> suporte@viprideorlando.com</div>
+      </div>
+      <div id="telaConfig" class="escondido">
+        <h2 id="titConfig">Configurações</h2>
+        <div class="text-body">Gerencie suas preferências no app.</div>
+        <div class="form-group" style="margin-top: 20px;">
+          <label>Notificações</label>
+          <div style="display:flex; justify-content:space-between; background:#152342; padding:12px; border-radius:12px; border:1px solid #2A3E67;">
+            <span id="txtNotif">Receber alertas de reserva</span>
+            <button id="toggleNotif" style="background:#1E3055; padding:4px 12px; border-radius:20px;">ON</button>
+          </div>
+        </div>
+        <div class="text-muted" style="margin-top: 10px;"><a href="#" style="color:#E3B23C; text-decoration:none;">Termos de Uso</a> • <a href="#" style="color:#E3B23C; text-decoration:none;">Política de Privacidade</a></div>
+      </div>
+      <div id="telaDelete" class="escondido">
+        <h2 id="titDelete" style="color:#ff6b6b;">Excluir Perfil</h2>
+        <div class="text-body">Tem certeza que deseja excluir sua conta permanentemente? Esta ação não pode ser desfeita.</div>
+        <div class="form-group"><label>Digite seu e-mail para confirmar</label><input type="email" id="inputDeleteEmail" placeholder="seuemail@email.com"></div>
+        <button class="btn-danger" id="btnDeleteConfirm">Sim, excluir minha conta</button>
+      </div>
+    </div>
+
+    <div id="menuOverlay">
+      <div id="menuDrawer">
+        <button id="fecharMenu">✕</button>
+        <h2 id="menuTitle">Menu</h2>
+        <ul>
+          <li><button id="navPerfil"><span class="icon">👤</span> <span id="menuProfile">Cadastrar perfil</span></button></li>
+          <li><button id="navSobre"><span class="icon">ℹ️</span> <span id="menuAbout">Sobre o app</span></button></li>
+          <li><button id="navConfig"><span class="icon">⚙️</span> <span id="menuSettings">Configurações</span></button></li>
+          <li><button class="perigo" id="navDelete"><span class="icon">🗑️</span> <span id="menuDelete">Excluir perfil</span></button></li>
+          <li><button class="perigo" id="navLogout"><span class="icon">🚪</span> <span id="menuLogout">Sair</span></button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ===== CONFIGURAÇÃO =====
+    const CARROS = { sedan: { nome: {pt:'Sedã 5 lugares', en:'Sedan 5 seats', es:'Sedán 5 plazas'}, preco: 350 }, suv: { nome: {pt:'SUV 7 lugares', en:'SUV 7 seats', es:'SUV 7 plazas'}, preco: 450 } };
+    const LANG = {
+      pt: { sub:'Transporte executivo particular', tagA:'Reserve seu', tagB:'translado', tagC:'com conforto.', tabDaily:'🏎️ Diária', tabTransfer:'🚖 Translado', chooseCar:'Escolha o veículo', descSedan:'Conforto e elegância', descSuv:'Espaço para toda a família', precoSedan:'$350/dia', precoSuv:'$450/dia', dailyInfo:'<strong>✓</strong> Motorista exclusivo das 8h às 23h<br><strong>✓</strong> Pedágio e combustível inclusos<br><strong>✓</strong> 200km/dia · $1 por km extra', labelDias:'Selecione os dias', msgMultiplicador:'Valor multiplicado pelos dias escolhidos', labelPartida:'Endereço de partida', labelChegada:'Endereço de chegada', labelHoras:'Duração estimada (horas)', msgMinimo:'* Reserva mínima de 1 hora', transferInfo:'<strong>$40/hora</strong> + <strong>$1,50/km</strong><br>Valor calculado com base na distância estimada', labelTotal:'Valor total', btnTexto:'Reservar', nota:'Preço fechado. Sem surpresas.', menuTitle:'Menu', menuProfile:'Cadastrar perfil', menuAbout:'Sobre o app', menuSettings:'Configurações', menuDelete:'Excluir perfil', menuLogout:'Sair', txtVoltar:'Voltar', titPerfil:'Cadastrar Perfil', titSobre:'Sobre o App', titConfig:'Configurações', titDelete:'Excluir Perfil', txtNotif:'Receber alertas de reserva', confTitulo:'Reserva Confirmada!', confSubtitulo:'Agendamento realizado com sucesso.', confServico:'Serviço', confVeiculo:'Veículo', confPeriodo:'Período', confTotal:'Total', confWhatsApp:'Um especialista entrará em contato via WhatsApp para finalizar os detalhes.', confMotoristaNome:'Michael Anderson', confMotoristaBio:'Fluente em inglês e espanhol · 8 anos de experiência · Especialista em rotas de Orlando.', confMotoristaPlaca:'🚗 Chevrolet Suburban · Placa: ORL-2024' },
+      en: { sub:'Private executive transport', tagA:'Book your', tagB:'transfer', tagC:'with comfort.', tabDaily:'🏎️ Daily', tabTransfer:'🚖 Transfer', chooseCar:'Choose your vehicle', descSedan:'Comfort and elegance', descSuv:'Space for the whole family', precoSedan:'$350/day', precoSuv:'$450/day', dailyInfo:'<strong>✓</strong> Exclusive driver 8am-11pm<br><strong>✓</strong> Tolls and fuel included<br><strong>✓</strong> 200km/day · $1 extra per km', labelDias:'Select days', msgMultiplicador:'Price multiplied by selected days', labelPartida:'Pickup address', labelChegada:'Drop-off address', labelHoras:'Estimated duration (hours)', msgMinimo:'* Minimum booking of 1 hour', transferInfo:'<strong>$40/hour</strong> + <strong>$1.50/km</strong><br>Price calculated based on estimated distance', labelTotal:'Total price', btnTexto:'Book now', nota:'Flat price. No surprises.', menuTitle:'Menu', menuProfile:'Edit profile', menuAbout:'About the app', menuSettings:'Settings', menuDelete:'Delete account', menuLogout:'Log out', txtVoltar:'Back', titPerfil:'Edit Profile', titSobre:'About the App', titConfig:'Settings', titDelete:'Delete Account', txtNotif:'Receive booking alerts', confTitulo:'Booking Confirmed!', confSubtitulo:'Appointment successfully scheduled.', confServico:'Service', confVeiculo:'Vehicle', confPeriodo:'Period', confTotal:'Total', confWhatsApp:'A specialist will contact you via WhatsApp to finalize the details.', confMotoristaNome:'Michael Anderson', confMotoristaBio:'Fluent in English and Spanish · 8 years of experience · Specialist in Orlando routes.', confMotoristaPlaca:'🚗 Chevrolet Suburban · Plate: ORL-2024' },
+      es: { sub:'Transporte ejecutivo privado', tagA:'Reserva tu', tagB:'traslado', tagC:'con confort.', tabDaily:'🏎️ Diario', tabTransfer:'🚖 Traslado', chooseCar:'Elige tu vehículo', descSedan:'Confort y elegancia', descSuv:'Espacio para toda la familia', precoSedan:'$350/día', precoSuv:'$450/día', dailyInfo:'<strong>✓</strong> Chofer exclusivo 8am-11pm<br><strong>✓</strong> Peaje y combustible incluidos<br><strong>✓</strong> 200km/día · $1 extra por km', labelDias:'Selecciona los días', msgMultiplicador:'Precio multiplicado por los días elegidos', labelPartida:'Dirección de recogida', labelChegada:'Dirección de llegada', labelHoras:'Duración estimada (horas)', msgMinimo:'* Reserva mínima de 1 hora', transferInfo:'<strong>$40/hora</strong> + <strong>$1,50/km</strong><br>Precio calculado según distancia estimada', labelTotal:'Precio total', btnTexto:'Reservar', nota:'Precio cerrado. Sin sorpresas.', menuTitle:'Menú', menuProfile:'Editar perfil', menuAbout:'Sobre la app', menuSettings:'Ajustes', menuDelete:'Borrar cuenta', menuLogout:'Salir', txtVoltar:'Volver', titPerfil:'Editar Perfil', titSobre:'Sobre la App', titConfig:'Ajustes', titDelete:'Borrar Cuenta', txtNotif:'Recibir alertas de reserva', confTitulo:'¡Reserva Confirmada!', confSubtitulo:'Agendamiento realizado con éxito.', confServico:'Servicio', confVeiculo:'Vehículo', confPeriodo:'Período', confTotal:'Total', confWhatsApp:'Un especialista se comunicará vía WhatsApp para finalizar los detalles.', confMotoristaNome:'Michael Anderson', confMotoristaBio:'Fluido en inglés y español · 8 años de experiencia · Especialista en rutas de Orlando.', confMotoristaPlaca:'🚗 Chevrolet Suburban · Placa: ORL-2024' }
+    };
+
+    // ===== CONFIGURAÇÃO CLOUDFLARE =====
+    // 🟡 SUBSTITUA A URL ABAIXO PELA URL DO SEU WORKER NO CLOUDFLARE 🟡
+    const API_URL = 'https://seu-worker.workers.dev/reservas';
+
+    // ===== ESTADO =====
+    let modoAtual = 'daily', carroSelecionado = 'sedan', horasTransfer = 1, kmEstimado = 20, linguaAtual = 'pt';
+
+    // ===== MAPA =====
+    let mapInstance = null;
+    function initMap() {
+      if(!mapInstance) {
+        mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([28.38, -81.56], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+        setTimeout(() => mapInstance.invalidateSize(), 300);
+      }
+    }
+
+    // ===== FUNÇÕES =====
+    function aplicarIdioma(lang) {
+      linguaAtual = lang; const t = LANG[lang];
+      botoesIdioma.forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
+      ['subTitulo','tagA','tagB','tagC','chooseCar','descSedan','descSuv','labelDias','msgMultiplicador','labelPartida','labelChegada','labelHoras','msgMinimo','labelTotal','btnTexto','nota','menuTitle','menuProfile','menuAbout','menuSettings','menuDelete','menuLogout','txtVoltar','titPerfil','titSobre','titConfig','titDelete','txtNotif','confTitulo','confSubtitulo','confServico','confVeiculo','confPeriodo','confTotal','confWhatsApp','confMotoristaNome','confMotoristaBio','confMotoristaPlaca']
+      .forEach(id => document.getElementById(id).textContent = t[id]);
+      document.getElementById('tabDaily').innerHTML = t.tabDaily;
+      document.getElementById('tabTransfer').innerHTML = t.tabTransfer;
+      document.getElementById('precoSedan').textContent = t.precoSedan;
+      document.getElementById('precoSuv').textContent = t.precoSuv;
+      document.getElementById('dailyInfo').innerHTML = t.dailyInfo;
+      document.getElementById('transferInfo').innerHTML = t.transferInfo;
+      document.getElementById('nomeSedan').textContent = CARROS.sedan.nome[lang];
+      document.getElementById('nomeSuv').textContent = CARROS.suv.nome[lang];
+      calcularTotal();
+    }
+
+    function trocarAba(tab) {
+      modoAtual = tab;
+      tabs.forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
+      document.getElementById('daily').classList.toggle('escondido', tab!=='daily');
+      document.getElementById('transfer').classList.toggle('escondido', tab!=='transfer');
+      if(tab==='transfer') initMap();
+      calcularTotal();
+    }
+
+    function calcularTotal() {
+      const t = LANG[linguaAtual];
+      if (modoAtual === 'daily') {
+        const carro = CARROS[carroSelecionado];
+        const inicio = new Date(document.getElementById('dataInicio').value);
+        const fim = new Date(document.getElementById('dataFim').value);
+        let dias = 1;
+        if (document.getElementById('dataInicio').value && document.getElementById('dataFim').value && fim >= inicio) {
+          dias = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24)) + 1;
+        }
+        const total = carro.preco * dias;
+        document.getElementById('valorTotal').textContent = '$' + total;
+        document.getElementById('resumoServico').textContent = t.tabDaily.replace('🏎️ ', '') + ' · ' + carro.nome[linguaAtual];
+        document.getElementById('resumoDias').textContent = dias + ' ' + (dias > 1 ? (linguaAtual === 'en' ? 'days' : linguaAtual === 'es' ? 'días' : 'dias') : (linguaAtual === 'en' ? 'day' : linguaAtual === 'es' ? 'día' : 'dia'));
+      } else {
+        const total = (horasTransfer * 40) + (kmEstimado * 1.50);
+        document.getElementById('valorTotal').textContent = '$' + Math.round(total);
+        document.getElementById('resumoServico').textContent = t.tabTransfer.replace('🚖 ', '') + ' · ' + horasTransfer + 'h';
+        document.getElementById('resumoDias').textContent = '~' + kmEstimado + 'km';
+      }
+    }
+
+    // ===== FUNÇÃO QUE ENVIA PARA O CLOUDFLARE =====
+    async function enviarReservaParaAPI(dados) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        const resultado = await response.json();
+        if(resultado.success) {
+          return resultado;
+        } else {
+          throw new Error(resultado.error || 'Erro ao salvar');
+        }
+      } catch (error) {
+        console.error('Erro na API:', error);
+        throw error;
+      }
+    }
+
+    function abrirConfirmacao() {
+      const t = LANG[linguaAtual];
+      const carro = CARROS[carroSelecionado];
+      document.getElementById('confValorServico').textContent = document.getElementById('resumoServico').textContent.split(' · ')[0];
+      document.getElementById('confValorVeiculo').textContent = carro.nome[linguaAtual];
+      document.getElementById('confValorPeriodo').textContent = document.getElementById('resumoDias').textContent;
+      document.getElementById('confValorTotal').textContent = document.getElementById('valorTotal').textContent;
+      
+      // Simular Lembretes
+      alert(`✅ Lembretes agendados:\n\n📅 5 dias antes\n📅 24h antes\n⏰ 2h antes\n🚗 Motorista a caminho!\n\n${t.confWhatsApp}`);
+      
+      document.getElementById('telaConfirmacao').classList.add('ativa');
+    }
+
+    // ===== EVENTOS =====
+    const botoesIdioma = document.querySelectorAll('#langs button');
+    const tabs = document.querySelectorAll('#tabs button');
+    const carros = document.querySelectorAll('#carrosDiaria .carro');
+    const btnHoras = document.querySelectorAll('#transfer .controlador-horas button');
+    const btnReservar = document.getElementById('btnReservar');
+
+    botoesIdioma.forEach(b => b.addEventListener('click', function() { aplicarIdioma(this.dataset.lang); }));
+    tabs.forEach(b => b.addEventListener('click', function() { trocarAba(this.dataset.tab); }));
+    carros.forEach(c => c.addEventListener('click', function() { carroSelecionado = this.dataset.carro; carros.forEach(x => x.setAttribute('aria-selected', x===this)); calcularTotal(); }));
+    
+    btnHoras.forEach(b => b.addEventListener('click', function() {
+      const ajuste = parseInt(this.dataset.ajuste);
+      horasTransfer = Math.min(12, Math.max(1, horasTransfer + ajuste));
+      document.getElementById('horasTransfer').textContent = horasTransfer;
+      calcularTotal();
+    }));
+
+    document.getElementById('dataInicio').addEventListener('change', calcularTotal);
+    document.getElementById('dataFim').addEventListener('change', calcularTotal);
+    document.getElementById('partida').addEventListener('input', calcularTotal);
+    document.getElementById('chegada').addEventListener('input', calcularTotal);
+
+    // ===== AÇÃO DO BOTÃO RESERVAR =====
+    btnReservar.addEventListener('click', async function() {
+      const t = LANG[linguaAtual];
+      const carro = CARROS[carroSelecionado];
+      
+      // Coletar dados do formulário
+      const dados = {
+        cliente: document.getElementById('inputNome').value || 'Cliente não cadastrado',
+        email: document.getElementById('inputEmail').value || 'email@nao.informado',
+        telefone: document.getElementById('inputTel').value || '(00) 00000-0000',
+        pais: document.getElementById('inputPais').value || 'Não informado',
+        servico: document.getElementById('resumoServico').textContent.split(' · ')[0],
+        veiculo: carro.nome[linguaAtual],
+        data_servico: document.getElementById('dataInicio').value || new Date().toISOString().split('T')[0],
+        periodo: document.getElementById('resumoDias').textContent,
+        origem: modoAtual === 'daily' ? 'Partida definida' : document.getElementById('partida').value,
+        destino: modoAtual === 'daily' ? '200km inclusos' : document.getElementById('chegada').value,
+        valor: document.getElementById('valorTotal').textContent,
+        voo: document.getElementById('voo').value || null
+      };
+
+      try {
+        // Envia para o Cloudflare
+        const resultado = await enviarReservaParaAPI(dados);
+        
+        // Se salvou com sucesso, abre a confirmação
+        abrirConfirmacao();
+        
+      } catch (error) {
+        alert('Erro ao realizar a reserva. Tente novamente.\n\n' + error.message);
+      }
+    });
+
+    document.getElementById('btnFecharConfirmacao').addEventListener('click', function() {
+      document.getElementById('telaConfirmacao').classList.remove('ativa');
+    });
+
+    // Menu e navegação
+    document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('menuOverlay').classList.add('aberto'));
+    document.getElementById('fecharMenu').addEventListener('click', () => document.getElementById('menuOverlay').classList.remove('aberto'));
+    document.getElementById('menuOverlay').addEventListener('click', e => { if(e.target === e.currentTarget) document.getElementById('menuOverlay').classList.remove('aberto'); });
+    
+    ['navPerfil','navSobre','navConfig','navDelete'].forEach(id => {
+      const btn = document.getElementById(id);
+      btn.addEventListener('click', function() {
+        const telas = ['telaPerfil','telaSobre','telaConfig','telaDelete'];
+        const idx = ['navPerfil','navSobre','navConfig','navDelete'].indexOf(id);
+        telas.forEach((t, i) => document.getElementById(t).classList.toggle('escondido', i !== idx));
+        document.getElementById('conteudoReserva').style.display = 'none';
+        document.getElementById('conteudoMenu').classList.add('ativo');
+        document.getElementById('menuOverlay').classList.remove('aberto');
+      });
+    });
+    
+    document.getElementById('btnVoltarMenu').addEventListener('click', function() {
+      document.getElementById('conteudoMenu').classList.remove('ativo');
+      document.getElementById('conteudoReserva').style.display = 'block';
+    });
+
+    document.getElementById('salvarPerfil').addEventListener('click', () => { alert('Perfil salvo!'); document.getElementById('btnVoltarMenu').click(); });
+    document.getElementById('btnDeleteConfirm').addEventListener('click', () => { alert('Conta excluída!'); document.getElementById('btnVoltarMenu').click(); });
+    document.getElementById('toggleNotif').addEventListener('click', function() { this.textContent = this.textContent === 'ON' ? 'OFF' : 'ON'; });
+
+    // ===== INICIALIZAÇÃO =====
+    const hoje = new Date();
+    const amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
+    document.getElementById('dataInicio').value = hoje.toISOString().split('T')[0];
+    document.getElementById('dataFim').value = amanha.toISOString().split('T')[0];
+    aplicarIdioma('pt');
+  </script>
+</body>
+</html>

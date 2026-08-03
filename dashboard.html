@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VipRide — Painel da Empresa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0D1730;
+      --navy2: #152342;
+      --navy3: #1E3055;
+      --line: #2A3E67;
+      --gold: #E3B23C;
+      --gold2: #F5D07E;
+      --sky: #8FA9D4;
+      --paper: #F3F6FB;
+      --success: #25D366;
+      --danger: #ff6b6b;
+      --warning: #f1c40f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter Tight', system-ui, sans-serif;
+      background: #070C18;
+      color: var(--paper);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    button { cursor: pointer; border: 0; background: none; font: inherit; color: inherit; }
+    a { text-decoration: none; color: inherit; }
+
+    .app-dash {
+      width: 100%;
+      max-width: 900px;
+      background: var(--navy);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+      border: 1px solid var(--line);
+      min-height: 600px;
+    }
+
+    /* TOPO DO PAINEL */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 800;
+      color: var(--gold);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header h1 small {
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 400;
+      color: var(--sky);
+      font-size: 14px;
+    }
+    .header .status-badge {
+      background: var(--success);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header .status-badge span { font-size: 14px; }
+
+    /* FILTROS */
+    .filtros {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .filtros input, .filtros select {
+      background: var(--navy2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--paper);
+      font-size: 14px;
+      flex: 1;
+      min-width: 150px;
+      outline: none;
+    }
+    .filtros input:focus, .filtros select:focus {
+      border-color: var(--gold);
+    }
+    .filtros input::placeholder { color: var(--sky); }
+
+    /* LISTA */
+    .lista-solicitacoes {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-solicitacao {
+      background: var(--navy2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+      transition: 0.2s;
+      cursor: pointer;
+    }
+    .card-solicitacao:hover {
+      border-color: var(--gold);
+      background: rgba(227, 178, 60, 0.05);
+      transform: translateY(-2px);
+    }
+    .card-solicitacao .codigo {
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 14px;
+    }
+    .card-solicitacao .cliente {
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-solicitacao .cliente small {
+      font-weight: 400;
+      color: var(--sky);
+      font-size: 12px;
+    }
+    .card-solicitacao .servico {
+      font-size: 14px;
+      color: var(--paper);
+    }
+    .card-solicitacao .servico small {
+      display: block;
+      color: var(--sky);
+      font-size: 12px;
+    }
+    .card-solicitacao .valor {
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 16px;
+    }
+    .card-solicitacao .status {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .status.novo { background: rgba(241, 196, 15, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .status.confirmado { background: rgba(37, 211, 102, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .status.cancelado { background: rgba(255, 107, 107, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+
+    .card-solicitacao .arrow {
+      color: var(--sky);
+      font-size: 18px;
+    }
+
+    /* TELA DE DETALHES */
+    #detalhesArea {
+      display: none;
+      background: var(--navy2);
+      border: 1px solid var(--gold);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 20px;
+    }
+    #detalhesArea.ativo { display: block; }
+
+    .voltar-lista {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--sky);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      transition: 0.2s;
+    }
+    .voltar-lista:hover { color: var(--gold); }
+
+    .detalhes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 30px;
+    }
+    .detalhes-item {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+    }
+    .detalhes-item label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--sky);
+      font-weight: 600;
+    }
+    .detalhes-item span {
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 2px;
+      display: block;
+    }
+    .detalhes-item .highlight { color: var(--gold); font-weight: 700; }
+
+    .acoes-detalhe {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-acao {
+      background: var(--gold);
+      color: #20180A;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: 0.2s;
+      flex: 1;
+      min-width: 140px;
+      text-align: center;
+    }
+    .btn-acao:hover { transform: scale(1.02); box-shadow: 0 4px 20px rgba(227,178,60,0.25); }
+    .btn-acao.whats {
+      background: var(--success);
+      color: #fff;
+    }
+    .btn-acao.whats:hover { box-shadow: 0 4px 20px rgba(37,211,102,0.25); }
+    .btn-acao.secundario {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--paper);
+    }
+    .btn-acao.secundario:hover { background: var(--navy3); }
+    .btn-acao.danger {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+    .btn-acao.danger:hover { background: var(--danger); color: #fff; }
+
+    /* RESPONSIVO */
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .app-dash { padding: 16px; border-radius: 16px; }
+      .header h1 { font-size: 20px; }
+      .card-solicitacao {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 14px;
+      }
+      .card-solicitacao .codigo { grid-column: 1 / 2; }
+      .card-solicitacao .status { grid-column: 2 / 3; text-align: right; }
+      .card-solicitacao .cliente { grid-column: 1 / 3; }
+      .card-solicitacao .servico { grid-column: 1 / 2; }
+      .card-solicitacao .valor { grid-column: 2 / 3; text-align: right; }
+      .card-solicitacao .arrow { display: none; }
+      .detalhes-grid { grid-template-columns: 1fr; }
+      .acoes-detalhe { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-dash">
+  <!-- HEADER -->
+  <div class="header">
+    <h1>✦ VipRide <small>Painel da Empresa</small></h1>
+    <div class="status-badge">
+      <span>🟢</span> Online
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <input type="text" id="busca" placeholder="Buscar por nome, código ou telefone...">
+    <select id="filtroStatus">
+      <option value="todos">Todos os status</option>
+      <option value="novo">🟡 Novo</option>
+      <option value="confirmado">🟢 Confirmado</option>
+      <option value="cancelado">🔴 Cancelado</option>
+    </select>
+  </div>
+
+  <!-- ÁREA DA LISTA -->
+  <div id="listaArea">
+    <div class="lista-solicitacoes" id="listaContainer">
+      <!-- Cards gerados via JS -->
+    </div>
+  </div>
+
+  <!-- ÁREA DE DETALHES -->
+  <div id="detalhesArea">
+    <div class="voltar-lista" id="btnVoltar">
+      <span>←</span> Voltar para lista
+    </div>
+    <h2 style="color: var(--gold); font-family: 'Fraunces'; font-size: 22px; margin-bottom: 16px;" id="detalhesTitulo">Detalhes da Solicitação</h2>
+    
+    <div class="detalhes-grid" id="detalhesGrid">
+      <!-- Preenchido via JS -->
+    </div>
+
+    <div class="acoes-detalhe">
+      <button class="btn-acao secundario" id="btnWhatsApp">💬 Contato via WhatsApp</button>
+      <button class="btn-acao" id="btnConfirmar">✅ Marcar como confirmado</button>
+      <button class="btn-acao danger" id="btnCancelar">❌ Cancelar reserva</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== CONFIGURAÇÃO CLOUDFLARE =====
+  // 🟡 SUBSTITUA A URL ABAIXO PELA URL DO SEU WORKER 🟡
+  const API_URL = 'https://seu-worker.workers.dev/reservas';
+
+  // ===== ESTADO =====
+  let dados = [];
+  let reservaSelecionadaId = null;
+
+  // ===== ELEMENTOS DOM =====
+  const listaContainer = document.getElementById('listaContainer');
+  const detalhesArea = document.getElementById('detalhesArea');
+  const listaArea = document.getElementById('listaArea');
+  const btnVoltar = document.getElementById('btnVoltar');
+  const detalhesGrid = document.getElementById('detalhesGrid');
+  const btnWhatsApp = document.getElementById('btnWhatsApp');
+  const btnConfirmar = document.getElementById('btnConfirmar');
+  const btnCancelar = document.getElementById('btnCancelar');
+  const inputBusca = document.getElementById('busca');
+  const filtroStatus = document.getElementById('filtroStatus');
+
+  // ===== FUNÇÕES =====
+
+  // Buscar dados da API
+  async function carregarReservas() {
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error('Erro ao carregar dados');
+      dados = await response.json();
+      renderizarLista();
+    } catch (error) {
+      console.error('Erro:', error);
+      listaContainer.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--danger);">
+          <span style="font-size:40px; display:block; margin-bottom:10px;">⚠️</span>
+          Erro ao conectar com o banco de dados.<br>
+          <small style="color:var(--sky);">${error.message}</small>
+        </div>
+      `;
+    }
+  }
+
+  // Renderizar a lista
+  function renderizarLista() {
+    const termo = inputBusca.value.toLowerCase();
+    const statusFiltro = filtroStatus.value;
+
+    const filtrados = dados.filter(r => {
+      const matchBusca = r.codigo.toLowerCase().includes(termo) ||
+                         r.cliente.toLowerCase().includes(termo) ||
+                         r.telefone.includes(termo);
+      const matchStatus = statusFiltro === 'todos' || r.status === statusFiltro;
+      return matchBusca && matchStatus;
+    });
+
+    if (filtrados.length === 0) {
+      listaContainer.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--sky);">
+          <span style="font-size:40px; display:block; margin-bottom:10px;">📭</span>
+          Nenhuma solicitação encontrada.
+        </div>
+      `;
+      return;
+    }
+
+    listaContainer.innerHTML = filtrados.map(r => `
+      <div class="card-solicitacao" data-id="${r.id}">
+        <span class="codigo">${r.codigo}</span>
+        <div class="cliente">
+          ${r.cliente}
+          <small>${r.telefone}</small>
+        </div>
+        <div class="servico">
+          ${r.servico}
+          <small>${r.veiculo}</small>
+        </div>
+        <span class="valor">${r.valor}</span>
+        <span class="status ${r.status}">${r.status === 'novo' ? '🟡 Novo' : r.status === 'confirmado' ? '🟢 Confirmado' : '🔴 Cancelado'}</span>
+        <span class="arrow">›</span>
+      </div>
+    `).join('');
+
+    // Adicionar evento de clique em cada card
+    document.querySelectorAll('.card-solicitacao').forEach(card => {
+      card.addEventListener('click', function() {
+        const id = this.dataset.id;
+        abrirDetalhes(id);
+      });
+    });
+  }
+
+  // Abrir detalhes
+  function abrirDetalhes(id) {
+    const reserva = dados.find(r => r.id == id);
+    if (!reserva) return;
+
+    reservaSelecionadaId = id;
+    listaArea.style.display = 'none';
+    detalhesArea.classList.add('ativo');
+
+    const statusLabel = reserva.status === 'novo' ? '🟡 Novo' : reserva.status === 'confirmado' ? '🟢 Confirmado' : '🔴 Cancelado';
+
+    detalhesGrid.innerHTML = `
+      <div class="detalhes-item"><label>Código</label><span class="highlight">${reserva.codigo}</span></div>
+      <div class="detalhes-item"><label>Status</label><span>${statusLabel}</span></div>
+      <div class="detalhes-item"><label>Cliente</label><span>${reserva.cliente}</span></div>
+      <div class="detalhes-item"><label>E-mail</label><span>${reserva.email}</span></div>
+      <div class="detalhes-item"><label>Telefone</label><span>${reserva.telefone}</span></div>
+      <div class="detalhes-item"><label>País</label><span>${reserva.pais || 'Não informado'}</span></div>
+      <div class="detalhes-item"><label>Serviço</label><span>${reserva.servico}</span></div>
+      <div class="detalhes-item"><label>Veículo</label><span>${reserva.veiculo}</span></div>
+      <div class="detalhes-item"><label>Data do serviço</label><span>${reserva.data_servico}</span></div>
+      <div class="detalhes-item"><label>Período / Duração</label><span>${reserva.periodo}</span></div>
+      <div class="detalhes-item"><label>Origem</label><span>${reserva.origem || '—'}</span></div>
+      <div class="detalhes-item"><label>Destino</label><span>${reserva.destino || '—'}</span></div>
+      <div class="detalhes-item"><label>Valor total</label><span class="highlight">${reserva.valor}</span></div>
+      <div class="detalhes-item"><label>Voo</label><span>${reserva.voo || 'Nenhum'}</span></div>
+    `;
+
+    // Configurar botões baseados no status
+    if (reserva.status === 'cancelado') {
+      btnConfirmar.style.display = 'none';
+      btnCancelar.style.display = 'none';
+    } else if (reserva.status === 'confirmado') {
+      btnConfirmar.style.display = 'none';
+      btnCancelar.style.display = 'block';
+      btnCancelar.textContent = '❌ Cancelar reserva';
+    } else {
+      btnConfirmar.style.display = 'block';
+      btnCancelar.style.display = 'block';
+      btnCancelar.textContent = '❌ Cancelar reserva';
+    }
+  }
+
+  // Voltar para lista
+  function voltarParaLista() {
+    listaArea.style.display = 'block';
+    detalhesArea.classList.remove('ativo');
+    reservaSelecionadaId = null;
+    carregarReservas();
+  }
+
+  // Atualizar status via API
+  async function atualizarStatus(id, novoStatus) {
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: novoStatus })
+      });
+      if (!response.ok) throw new Error('Erro ao atualizar');
+      const result = await response.json();
+      if (result.success) {
+        // Recarrega os dados
+        await carregarReservas();
+        abrirDetalhes(id);
+      } else {
+        alert('Erro ao atualizar status.');
+      }
+    } catch (error) {
+      alert('Erro: ' + error.message);
+    }
+  }
+
+  // ===== EVENTOS =====
+
+  // Voltar
+  btnVoltar.addEventListener('click', voltarParaLista);
+
+  // WhatsApp
+  btnWhatsApp.addEventListener('click', function() {
+    if (!reservaSelecionadaId) return;
+    const reserva = dados.find(r => r.id == reservaSelecionadaId);
+    if (!reserva) return;
+    const url = `https://wa.me/${reserva.telefone.replace(/[^0-9]/g, '')}`;
+    window.open(url, '_blank');
+  });
+
+  // Confirmar
+  btnConfirmar.addEventListener('click', function() {
+    if (!reservaSelecionadaId) return;
+    atualizarStatus(reservaSelecionadaId, 'confirmado');
+  });
+
+  // Cancelar
+  btnCancelar.addEventListener('click', function() {
+    if (!reservaSelecionadaId) return;
+    if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
+    atualizarStatus(reservaSelecionadaId, 'cancelado');
+  });
+
+  // Filtros
+  inputBusca.addEventListener('input', renderizarLista);
+  filtroStatus.addEventListener('change', renderizarLista);
+
+  // ===== INICIALIZAÇÃO =====
+  carregarReservas();
+</script>
+</body>
+</html>
