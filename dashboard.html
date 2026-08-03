@@ -45,7 +45,6 @@
       min-height: 600px;
     }
 
-    /* TOPO DO PAINEL */
     .header {
       display: flex;
       justify-content: space-between;
@@ -84,7 +83,6 @@
     }
     .header .status-badge span { font-size: 14px; }
 
-    /* FILTROS */
     .filtros {
       display: flex;
       gap: 10px;
@@ -107,7 +105,6 @@
     }
     .filtros input::placeholder { color: var(--sky); }
 
-    /* LISTA */
     .lista-solicitacoes {
       display: flex;
       flex-direction: column;
@@ -177,7 +174,6 @@
       font-size: 18px;
     }
 
-    /* TELA DE DETALHES */
     #detalhesArea {
       display: none;
       background: var(--navy2);
@@ -262,7 +258,6 @@
     }
     .btn-acao.danger:hover { background: var(--danger); color: #fff; }
 
-    /* RESPONSIVO */
     @media (max-width: 600px) {
       body { padding: 12px; }
       .app-dash { padding: 16px; border-radius: 16px; }
@@ -286,7 +281,6 @@
 <body>
 
 <div class="app-dash">
-  <!-- HEADER -->
   <div class="header">
     <h1>✦ VipRide <small>Painel da Empresa</small></h1>
     <div class="status-badge">
@@ -294,7 +288,6 @@
     </div>
   </div>
 
-  <!-- FILTROS -->
   <div class="filtros">
     <input type="text" id="busca" placeholder="Buscar por nome, código ou telefone...">
     <select id="filtroStatus">
@@ -305,14 +298,11 @@
     </select>
   </div>
 
-  <!-- ÁREA DA LISTA -->
   <div id="listaArea">
     <div class="lista-solicitacoes" id="listaContainer">
-      <!-- Cards gerados via JS -->
     </div>
   </div>
 
-  <!-- ÁREA DE DETALHES -->
   <div id="detalhesArea">
     <div class="voltar-lista" id="btnVoltar">
       <span>←</span> Voltar para lista
@@ -320,7 +310,6 @@
     <h2 style="color: var(--gold); font-family: 'Fraunces'; font-size: 22px; margin-bottom: 16px;" id="detalhesTitulo">Detalhes da Solicitação</h2>
     
     <div class="detalhes-grid" id="detalhesGrid">
-      <!-- Preenchido via JS -->
     </div>
 
     <div class="acoes-detalhe">
@@ -332,15 +321,12 @@
 </div>
 
 <script>
-  // ===== CONFIGURAÇÃO CLOUDFLARE =====
   // 🟡 SUBSTITUA A URL ABAIXO PELA URL DO SEU WORKER 🟡
   const API_URL = 'https://seu-worker.workers.dev/reservas';
 
-  // ===== ESTADO =====
   let dados = [];
   let reservaSelecionadaId = null;
 
-  // ===== ELEMENTOS DOM =====
   const listaContainer = document.getElementById('listaContainer');
   const detalhesArea = document.getElementById('detalhesArea');
   const listaArea = document.getElementById('listaArea');
@@ -352,9 +338,6 @@
   const inputBusca = document.getElementById('busca');
   const filtroStatus = document.getElementById('filtroStatus');
 
-  // ===== FUNÇÕES =====
-
-  // Buscar dados da API
   async function carregarReservas() {
     try {
       const response = await fetch(API_URL);
@@ -373,7 +356,6 @@
     }
   }
 
-  // Renderizar a lista
   function renderizarLista() {
     const termo = inputBusca.value.toLowerCase();
     const statusFiltro = filtroStatus.value;
@@ -413,7 +395,6 @@
       </div>
     `).join('');
 
-    // Adicionar evento de clique em cada card
     document.querySelectorAll('.card-solicitacao').forEach(card => {
       card.addEventListener('click', function() {
         const id = this.dataset.id;
@@ -422,7 +403,6 @@
     });
   }
 
-  // Abrir detalhes
   function abrirDetalhes(id) {
     const reserva = dados.find(r => r.id == id);
     if (!reserva) return;
@@ -450,7 +430,6 @@
       <div class="detalhes-item"><label>Voo</label><span>${reserva.voo || 'Nenhum'}</span></div>
     `;
 
-    // Configurar botões baseados no status
     if (reserva.status === 'cancelado') {
       btnConfirmar.style.display = 'none';
       btnCancelar.style.display = 'none';
@@ -465,7 +444,6 @@
     }
   }
 
-  // Voltar para lista
   function voltarParaLista() {
     listaArea.style.display = 'block';
     detalhesArea.classList.remove('ativo');
@@ -473,7 +451,6 @@
     carregarReservas();
   }
 
-  // Atualizar status via API
   async function atualizarStatus(id, novoStatus) {
     try {
       const response = await fetch(`${API_URL}/${id}`, {
@@ -484,7 +461,6 @@
       if (!response.ok) throw new Error('Erro ao atualizar');
       const result = await response.json();
       if (result.success) {
-        // Recarrega os dados
         await carregarReservas();
         abrirDetalhes(id);
       } else {
@@ -495,12 +471,8 @@
     }
   }
 
-  // ===== EVENTOS =====
-
-  // Voltar
   btnVoltar.addEventListener('click', voltarParaLista);
 
-  // WhatsApp
   btnWhatsApp.addEventListener('click', function() {
     if (!reservaSelecionadaId) return;
     const reserva = dados.find(r => r.id == reservaSelecionadaId);
@@ -509,24 +481,20 @@
     window.open(url, '_blank');
   });
 
-  // Confirmar
   btnConfirmar.addEventListener('click', function() {
     if (!reservaSelecionadaId) return;
     atualizarStatus(reservaSelecionadaId, 'confirmado');
   });
 
-  // Cancelar
   btnCancelar.addEventListener('click', function() {
     if (!reservaSelecionadaId) return;
     if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
     atualizarStatus(reservaSelecionadaId, 'cancelado');
   });
 
-  // Filtros
   inputBusca.addEventListener('input', renderizarLista);
   filtroStatus.addEventListener('change', renderizarLista);
 
-  // ===== INICIALIZAÇÃO =====
   carregarReservas();
 </script>
 </body>
