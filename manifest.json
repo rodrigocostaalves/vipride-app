@@ -1,0 +1,21 @@
+{
+  "name": "VipRide Orlando",
+  "short_name": "VipRide",
+  "description": "Reserve seu transporte executivo com conforto.",
+  "start_url": "https://rodrigocostaalves.github.io/vipride-app/",
+  "display": "standalone",
+  "background_color": "#0D1730",
+  "theme_color": "#E3B23C",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
