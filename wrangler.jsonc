@@ -1,0 +1,15 @@
+{
+  "name": "vipride-app",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-03",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "viprde_db",
+      "database_id": "4bd8a1e1-4ce7-4870-81da-06df53c2f5ff"
+    }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://rodrigocostaalves.github.io"
+  }
+}
