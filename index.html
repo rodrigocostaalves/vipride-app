@@ -340,14 +340,11 @@
       es: { sub:'Transporte ejecutivo privado', tagA:'Reserva tu', tagB:'traslado', tagC:'con confort.', tabDaily:'🏎️ Diario', tabTransfer:'🚖 Traslado', chooseCar:'Elige tu vehículo', descSedan:'Confort y elegancia', descSuv:'Espacio para toda la familia', precoSedan:'$350/día', precoSuv:'$450/día', dailyInfo:'<strong>✓</strong> Chofer exclusivo 8am-11pm<br><strong>✓</strong> Peaje y combustible incluidos<br><strong>✓</strong> 200km/día · $1 extra por km', labelDias:'Selecciona los días', msgMultiplicador:'Precio multiplicado por los días elegidos', labelPartida:'Dirección de recogida', labelChegada:'Dirección de llegada', labelHoras:'Duración estimada (horas)', msgMinimo:'* Reserva mínima de 1 hora', transferInfo:'<strong>$40/hora</strong> + <strong>$1,50/km</strong><br>Precio calculado según distancia estimada', labelTotal:'Precio total', btnTexto:'Reservar', nota:'Precio cerrado. Sin sorpresas.', menuTitle:'Menú', menuProfile:'Editar perfil', menuAbout:'Sobre la app', menuSettings:'Ajustes', menuDelete:'Borrar cuenta', menuLogout:'Salir', txtVoltar:'Volver', titPerfil:'Editar Perfil', titSobre:'Sobre la App', titConfig:'Ajustes', titDelete:'Borrar Cuenta', txtNotif:'Recibir alertas de reserva', confTitulo:'¡Reserva Confirmada!', confSubtitulo:'Agendamiento realizado con éxito.', confServico:'Servicio', confVeiculo:'Vehículo', confPeriodo:'Período', confTotal:'Total', confWhatsApp:'Un especialista se comunicará vía WhatsApp para finalizar los detalles.', confMotoristaNome:'Michael Anderson', confMotoristaBio:'Fluido en inglés y español · 8 años de experiencia · Especialista en rutas de Orlando.', confMotoristaPlaca:'🚗 Chevrolet Suburban · Placa: ORL-2024' }
     };
 
-    // ===== CONFIGURAÇÃO CLOUDFLARE (ATUALIZADA) =====
     const API_URL = 'https://vipride-app.rodrigo-costaalves.workers.dev/reservas';
 
-    // ===== ESTADO =====
     let modoAtual = 'daily', carroSelecionado = 'sedan', horasTransfer = 1, kmEstimado = 20, linguaAtual = 'pt';
-
-    // ===== MAPA =====
     let mapInstance = null;
+
     function initMap() {
       if(!mapInstance) {
         mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([28.38, -81.56], 10);
@@ -356,7 +353,6 @@
       }
     }
 
-    // ===== FUNÇÕES =====
     function aplicarIdioma(lang) {
       linguaAtual = lang; const t = LANG[lang];
       botoesIdioma.forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
@@ -404,7 +400,6 @@
       }
     }
 
-    // ===== FUNÇÃO QUE ENVIA PARA O CLOUDFLARE =====
     async function enviarReservaParaAPI(dados) {
       try {
         const response = await fetch(API_URL, {
@@ -432,13 +427,11 @@
       document.getElementById('confValorPeriodo').textContent = document.getElementById('resumoDias').textContent;
       document.getElementById('confValorTotal').textContent = document.getElementById('valorTotal').textContent;
       
-      // Simular Lembretes
       alert(`✅ Lembretes agendados:\n\n📅 5 dias antes\n📅 24h antes\n⏰ 2h antes\n🚗 Motorista a caminho!\n\n${t.confWhatsApp}`);
       
       document.getElementById('telaConfirmacao').classList.add('ativa');
     }
 
-    // ===== EVENTOS =====
     const botoesIdioma = document.querySelectorAll('#langs button');
     const tabs = document.querySelectorAll('#tabs button');
     const carros = document.querySelectorAll('#carrosDiaria .carro');
@@ -461,12 +454,10 @@
     document.getElementById('partida').addEventListener('input', calcularTotal);
     document.getElementById('chegada').addEventListener('input', calcularTotal);
 
-    // ===== AÇÃO DO BOTÃO RESERVAR =====
     btnReservar.addEventListener('click', async function() {
       const t = LANG[linguaAtual];
       const carro = CARROS[carroSelecionado];
       
-      // Coletar dados do formulário
       const dados = {
         cliente: document.getElementById('inputNome').value || 'Cliente não cadastrado',
         email: document.getElementById('inputEmail').value || 'email@nao.informado',
@@ -483,12 +474,8 @@
       };
 
       try {
-        // Envia para o Cloudflare
         const resultado = await enviarReservaParaAPI(dados);
-        
-        // Se salvou com sucesso, abre a confirmação
         abrirConfirmacao();
-        
       } catch (error) {
         alert('Erro ao realizar a reserva. Tente novamente.\n\n' + error.message);
       }
@@ -498,7 +485,6 @@
       document.getElementById('telaConfirmacao').classList.remove('ativa');
     });
 
-    // Menu e navegação
     document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('menuOverlay').classList.add('aberto'));
     document.getElementById('fecharMenu').addEventListener('click', () => document.getElementById('menuOverlay').classList.remove('aberto'));
     document.getElementById('menuOverlay').addEventListener('click', e => { if(e.target === e.currentTarget) document.getElementById('menuOverlay').classList.remove('aberto'); });
@@ -524,7 +510,6 @@
     document.getElementById('btnDeleteConfirm').addEventListener('click', () => { alert('Conta excluída!'); document.getElementById('btnVoltarMenu').click(); });
     document.getElementById('toggleNotif').addEventListener('click', function() { this.textContent = this.textContent === 'ON' ? 'OFF' : 'ON'; });
 
-    // ===== INICIALIZAÇÃO =====
     const hoje = new Date();
     const amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
     document.getElementById('dataInicio').value = hoje.toISOString().split('T')[0];
