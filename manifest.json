@@ -1,21 +1,51 @@
 {
+  "id": "/vipride-app/",
   "name": "VipRide Orlando",
   "short_name": "VipRide",
   "description": "Reserve seu transporte executivo com conforto. Motorista particular, translado e diária em Orlando.",
-  "start_url": "https://rodrigocostaalves.github.io/vipride-app/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "background_color": "#0D1730",
-  "theme_color": "#E3B23C",
+  "theme_color": "#0D1730",
+  "categories": ["travel", "business", "navigation"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova reserva",
+      "short_name": "Reservar",
+      "url": "./?tab=daily",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

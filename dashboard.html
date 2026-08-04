@@ -276,11 +276,32 @@
       .detalhes-grid { grid-template-columns: 1fr; }
       .acoes-detalhe { flex-direction: column; }
     }
+
+    /* ===== TELA DE ACESSO ===== */
+    #telaAcesso { position: fixed; inset: 0; background: var(--navy); display: grid; place-items: center; z-index: 100; padding: 20px; }
+    #telaAcesso.escondido { display: none; }
+    .caixa-acesso { background: var(--navy2); border: 1px solid var(--line); border-radius: 20px; padding: 30px 24px; width: 100%; max-width: 340px; text-align: center; }
+    .caixa-acesso h2 { color: var(--gold); font-size: 24px; margin-bottom: 4px; }
+    .caixa-acesso p { color: var(--sky); font-size: 13px; margin-bottom: 22px; }
+    .caixa-acesso input { width: 100%; background: var(--navy); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; color: var(--paper); font-size: 16px; outline: none; font-family: inherit; }
+    .caixa-acesso input:focus { border-color: var(--gold); }
+    .caixa-acesso button { width: 100%; margin-top: 12px; background: var(--gold); color: #20180A; border: none; border-radius: 12px; padding: 14px; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; }
+    .caixa-acesso small { display: block; margin-top: 12px; color: var(--danger); font-size: 12.5px; min-height: 16px; }
   </style>
 </head>
 <body>
 
-<div class="app-dash">
+<div id="telaAcesso">
+  <div class="caixa-acesso">
+    <h2>✦ VipRide</h2>
+    <p>Painel da empresa</p>
+    <input type="password" id="inputToken" placeholder="Token de acesso" autocomplete="current-password">
+    <button id="btnEntrar">Entrar</button>
+    <small id="erroAcesso"></small>
+  </div>
+</div>
+
+<div class="app-dash" id="areaPainel" style="display:none;">
   <div class="header">
     <h1>✦ VipRide <small>Painel da Empresa</small></h1>
     <div class="status-badge">
@@ -324,7 +345,19 @@
   // ===== CONFIGURAÇÃO CLOUDFLARE (ATUALIZADA) =====
   const API_URL = 'https://vipride-app.rodrigo-costaalves.workers.dev/reservas';
 
+  // Escapa qualquer texto vindo do banco antes de jogar no HTML.
+  // Sem isso, um cliente poderia cadastrar um nome com <script> e executá-lo aqui.
+  function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function getToken() { return sessionStorage.getItem('vipride_admin') || ''; }
+
   let dados = [];
+  let timerAtualizacao = null;
   let reservaSelecionadaId = null;
 
   const listaContainer = document.getElementById('listaContainer');
@@ -340,7 +373,8 @@
 
   async function carregarReservas() {
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(API_URL, { headers: { 'X-Admin-Token': getToken() } });
+      if (response.status === 401) { bloquearAcesso('Token inválido ou expirado.'); return; }
       if (!response.ok) throw new Error('Erro ao carregar dados');
       dados = await response.json();
       renderizarLista();
@@ -350,7 +384,7 @@
         <div style="text-align:center; padding:40px; color:var(--danger);">
           <span style="font-size:40px; display:block; margin-bottom:10px;">⚠️</span>
           Erro ao conectar com o banco de dados.<br>
-          <small style="color:var(--sky);">${error.message}</small>
+          <small style="color:var(--sky);">${esc(error.message)}</small>
         </div>
       `;
     }
@@ -361,9 +395,9 @@
     const statusFiltro = filtroStatus.value;
 
     const filtrados = dados.filter(r => {
-      const matchBusca = r.codigo.toLowerCase().includes(termo) ||
-                         r.cliente.toLowerCase().includes(termo) ||
-                         r.telefone.includes(termo);
+      const matchBusca = String(r.codigo || '').toLowerCase().includes(termo) ||
+                         String(r.cliente || '').toLowerCase().includes(termo) ||
+                         String(r.telefone || '').includes(termo);
       const matchStatus = statusFiltro === 'todos' || r.status === statusFiltro;
       return matchBusca && matchStatus;
     });
@@ -379,18 +413,18 @@
     }
 
     listaContainer.innerHTML = filtrados.map(r => `
-      <div class="card-solicitacao" data-id="${r.id}">
-        <span class="codigo">${r.codigo}</span>
+      <div class="card-solicitacao" data-id="${esc(r.id)}">
+        <span class="codigo">${esc(r.codigo)}</span>
         <div class="cliente">
-          ${r.cliente}
-          <small>${r.telefone}</small>
+          ${esc(r.cliente)}
+          <small>${esc(r.telefone)}</small>
         </div>
         <div class="servico">
-          ${r.servico}
-          <small>${r.veiculo}</small>
+          ${esc(r.servico)}
+          <small>${esc(r.veiculo)}</small>
         </div>
-        <span class="valor">${r.valor}</span>
-        <span class="status ${r.status}">${r.status === 'novo' ? '🟡 Novo' : r.status === 'confirmado' ? '🟢 Confirmado' : '🔴 Cancelado'}</span>
+        <span class="valor">${esc(r.valor)}</span>
+        <span class="status ${esc(r.status)}">${r.status === 'novo' ? '🟡 Novo' : r.status === 'confirmado' ? '🟢 Confirmado' : '🔴 Cancelado'}</span>
         <span class="arrow">›</span>
       </div>
     `).join('');
@@ -414,20 +448,20 @@
     const statusLabel = reserva.status === 'novo' ? '🟡 Novo' : reserva.status === 'confirmado' ? '🟢 Confirmado' : '🔴 Cancelado';
 
     detalhesGrid.innerHTML = `
-      <div class="detalhes-item"><label>Código</label><span class="highlight">${reserva.codigo}</span></div>
+      <div class="detalhes-item"><label>Código</label><span class="highlight">${esc(reserva.codigo)}</span></div>
       <div class="detalhes-item"><label>Status</label><span>${statusLabel}</span></div>
-      <div class="detalhes-item"><label>Cliente</label><span>${reserva.cliente}</span></div>
-      <div class="detalhes-item"><label>E-mail</label><span>${reserva.email}</span></div>
-      <div class="detalhes-item"><label>Telefone</label><span>${reserva.telefone}</span></div>
-      <div class="detalhes-item"><label>País</label><span>${reserva.pais || 'Não informado'}</span></div>
-      <div class="detalhes-item"><label>Serviço</label><span>${reserva.servico}</span></div>
-      <div class="detalhes-item"><label>Veículo</label><span>${reserva.veiculo}</span></div>
-      <div class="detalhes-item"><label>Data do serviço</label><span>${reserva.data_servico}</span></div>
-      <div class="detalhes-item"><label>Período / Duração</label><span>${reserva.periodo}</span></div>
-      <div class="detalhes-item"><label>Origem</label><span>${reserva.origem || '—'}</span></div>
-      <div class="detalhes-item"><label>Destino</label><span>${reserva.destino || '—'}</span></div>
-      <div class="detalhes-item"><label>Valor total</label><span class="highlight">${reserva.valor}</span></div>
-      <div class="detalhes-item"><label>Voo</label><span>${reserva.voo || 'Nenhum'}</span></div>
+      <div class="detalhes-item"><label>Cliente</label><span>${esc(reserva.cliente)}</span></div>
+      <div class="detalhes-item"><label>E-mail</label><span>${esc(reserva.email)}</span></div>
+      <div class="detalhes-item"><label>Telefone</label><span>${esc(reserva.telefone)}</span></div>
+      <div class="detalhes-item"><label>País</label><span>${esc(reserva.pais) || 'Não informado'}</span></div>
+      <div class="detalhes-item"><label>Serviço</label><span>${esc(reserva.servico)}</span></div>
+      <div class="detalhes-item"><label>Veículo</label><span>${esc(reserva.veiculo)}</span></div>
+      <div class="detalhes-item"><label>Data do serviço</label><span>${esc(reserva.data_servico)}</span></div>
+      <div class="detalhes-item"><label>Período / Duração</label><span>${esc(reserva.periodo)}</span></div>
+      <div class="detalhes-item"><label>Origem</label><span>${esc(reserva.origem) || '—'}</span></div>
+      <div class="detalhes-item"><label>Destino</label><span>${esc(reserva.destino) || '—'}</span></div>
+      <div class="detalhes-item"><label>Valor total</label><span class="highlight">${esc(reserva.valor)}</span></div>
+      <div class="detalhes-item"><label>Voo</label><span>${esc(reserva.voo) || 'Nenhum'}</span></div>
     `;
 
     if (reserva.status === 'cancelado') {
@@ -453,11 +487,12 @@
 
   async function atualizarStatus(id, novoStatus) {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/${encodeURIComponent(id)}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getToken() },
         body: JSON.stringify({ status: novoStatus })
       });
+      if (response.status === 401) { bloquearAcesso('Token inválido ou expirado.'); return; }
       if (!response.ok) throw new Error('Erro ao atualizar');
       const result = await response.json();
       if (result.success) {
@@ -495,7 +530,39 @@
   inputBusca.addEventListener('input', renderizarLista);
   filtroStatus.addEventListener('change', renderizarLista);
 
-  carregarReservas();
+  // ===== CONTROLE DE ACESSO =====
+  const telaAcesso = document.getElementById('telaAcesso');
+  const areaPainel = document.getElementById('areaPainel');
+  const inputToken = document.getElementById('inputToken');
+  const erroAcesso = document.getElementById('erroAcesso');
+
+  function bloquearAcesso(mensagem) {
+    sessionStorage.removeItem('vipride_admin');
+    if (timerAtualizacao) { clearInterval(timerAtualizacao); timerAtualizacao = null; }
+    areaPainel.style.display = 'none';
+    telaAcesso.classList.remove('escondido');
+    erroAcesso.textContent = mensagem || '';
+    inputToken.value = '';
+  }
+
+  function liberarPainel() {
+    telaAcesso.classList.add('escondido');
+    areaPainel.style.display = 'block';
+    erroAcesso.textContent = '';
+    carregarReservas();
+    if (!timerAtualizacao) timerAtualizacao = setInterval(carregarReservas, 30000);
+  }
+
+  document.getElementById('btnEntrar').addEventListener('click', () => {
+    const t = inputToken.value.trim();
+    if (!t) { erroAcesso.textContent = 'Digite o token.'; return; }
+    sessionStorage.setItem('vipride_admin', t);
+    liberarPainel();
+  });
+
+  inputToken.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnEntrar').click(); });
+
+  if (getToken()) liberarPainel();
 </script>
 </body>
 </html>

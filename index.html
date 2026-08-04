@@ -7,8 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="manifest" href=manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <meta name="description" content="Reserve seu transporte executivo com conforto. Motorista particular, translado e diária em Orlando.">
+  <meta name="theme-color" content="#0D1730">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VipRide">
+  <meta name="mobile-web-app-capable" content="yes">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Inter Tight', system-ui, sans-serif; background: #070C18; color: #F3F6FB; display: flex; justify-content: center; min-height: 100vh; }
@@ -87,6 +96,9 @@
     #btnReservar { width: 100%; background: #E3B23C; color: #20180A; border-radius: 14px; padding: 15px; font-weight: 700; font-size: 16px; margin-top: 14px; transition: 0.2s; }
     #btnReservar:hover { transform: scale(1.01); box-shadow: 0 4px 20px rgba(227,178,60,0.25); }
     #nota { text-align: center; font-size: 11px; color: #8FA9D4; margin-top: 8px; }
+    #avisoForm { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.35); color: #ffb3b3; border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; margin-top: 12px; }
+    #btnReservar[disabled] { opacity: 0.6; cursor: progress; transform: none; }
+    #btnReservar[disabled]:hover { transform: none; box-shadow: none; }
 
     /* ===== MENU ===== */
     #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -244,6 +256,7 @@
             <span id="resumoDias">1 dia</span>
           </div>
         </div>
+        <p id="avisoForm" class="escondido"></p>
         <button id="btnReservar"><span id="btnTexto">Reservar</span></button>
         <p id="nota">Preço fechado. Sem surpresas.</p>
       </footer>
@@ -255,6 +268,7 @@
         <div class="icone-grande">✅</div>
         <h2 id="confTitulo">Reserva Confirmada!</h2>
         <p class="subtitulo" id="confSubtitulo">Agendamento realizado com sucesso.</p>
+        <div class="linha-detalhe"><span id="confCodigo">Código da reserva</span><span id="confValorCodigo">—</span></div>
         <div class="linha-detalhe"><span id="confServico">Serviço</span><span id="confValorServico">Diária</span></div>
         <div class="linha-detalhe"><span id="confVeiculo">Veículo</span><span id="confValorVeiculo">Sedã 5 lugares</span></div>
         <div class="linha-detalhe"><span id="confPeriodo">Período</span><span id="confValorPeriodo">2 dias</span></div>
@@ -347,8 +361,11 @@
 
     function initMap() {
       if(!mapInstance) {
-        mapInstance = L.map('map', { zoomControl: false, attributionControl: false }).setView([28.38, -81.56], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+        mapInstance = L.map('map', { zoomControl: false }).setView([28.38, -81.56], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(mapInstance);
         setTimeout(() => mapInstance.invalidateSize(), 300);
       }
     }
@@ -357,7 +374,7 @@
       linguaAtual = lang; const t = LANG[lang];
       botoesIdioma.forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
       ['subTitulo','tagA','tagB','tagC','chooseCar','descSedan','descSuv','labelDias','msgMultiplicador','labelPartida','labelChegada','labelHoras','msgMinimo','labelTotal','btnTexto','nota','menuTitle','menuProfile','menuAbout','menuSettings','menuDelete','menuLogout','txtVoltar','titPerfil','titSobre','titConfig','titDelete','txtNotif','confTitulo','confSubtitulo','confServico','confVeiculo','confPeriodo','confTotal','confWhatsApp','confMotoristaNome','confMotoristaBio','confMotoristaPlaca']
-      .forEach(id => document.getElementById(id).textContent = t[id]);
+      .forEach(id => { const el = document.getElementById(id); if (el && t[id] !== undefined) el.textContent = t[id]; });
       document.getElementById('tabDaily').innerHTML = t.tabDaily;
       document.getElementById('tabTransfer').innerHTML = t.tabTransfer;
       document.getElementById('precoSedan').textContent = t.precoSedan;
@@ -386,7 +403,7 @@
         const fim = new Date(document.getElementById('dataFim').value);
         let dias = 1;
         if (document.getElementById('dataInicio').value && document.getElementById('dataFim').value && fim >= inicio) {
-          dias = Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24)) + 1;
+          dias = Math.round((fim - inicio) / 86400000) + 1;
         }
         const total = carro.preco * dias;
         document.getElementById('valorTotal').textContent = '$' + total;
@@ -419,18 +436,47 @@
       }
     }
 
-    function abrirConfirmacao() {
-      const t = LANG[linguaAtual];
+    function abrirConfirmacao(codigo) {
       const carro = CARROS[carroSelecionado];
+      document.getElementById('confValorCodigo').textContent = codigo || '—';
       document.getElementById('confValorServico').textContent = document.getElementById('resumoServico').textContent.split(' · ')[0];
       document.getElementById('confValorVeiculo').textContent = carro.nome[linguaAtual];
       document.getElementById('confValorPeriodo').textContent = document.getElementById('resumoDias').textContent;
       document.getElementById('confValorTotal').textContent = document.getElementById('valorTotal').textContent;
-      
-      alert(`✅ Lembretes agendados:\n\n📅 5 dias antes\n📅 24h antes\n⏰ 2h antes\n🚗 Motorista a caminho!\n\n${t.confWhatsApp}`);
-      
       document.getElementById('telaConfirmacao').classList.add('ativa');
     }
+
+    // ===== PERFIL (localStorage) =====
+    const CAMPOS_PERFIL = { nome: 'inputNome', email: 'inputEmail', pais: 'inputPais', telefone: 'inputTel' };
+
+    function lerPerfil() {
+      try { return JSON.parse(localStorage.getItem('vipride_perfil') || '{}'); }
+      catch { return {}; }
+    }
+
+    function carregarPerfilNaTela() {
+      const p = lerPerfil();
+      Object.entries(CAMPOS_PERFIL).forEach(([chave, id]) => {
+        const el = document.getElementById(id);
+        if (el && p[chave]) el.value = p[chave];
+      });
+      const conf = document.getElementById('inputEmailConfirm');
+      if (conf && p.email) conf.value = p.email;
+    }
+
+    function emailValido(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+
+    function mostrarAviso(texto) {
+      const el = document.getElementById('avisoForm');
+      el.textContent = texto;
+      el.classList.toggle('escondido', !texto);
+    }
+
+    const MSG = {
+      pt: { faltaPerfil: 'Cadastre seu nome, e-mail e telefone no menu antes de reservar.', emailInvalido: 'Informe um e-mail válido.', emailDiferente: 'Os dois e-mails não são iguais.', nomeCurto: 'Digite seu nome completo.', telCurto: 'Digite um telefone com DDD/código do país.', enviando: 'Enviando...', erroEnvio: 'Não conseguimos enviar sua reserva. Verifique a conexão e tente de novo.', origemFalta: 'Preencha o endereço de partida e de chegada.', dataInvalida: 'A data final não pode ser anterior à data inicial.', salvo: 'Dados salvos.' },
+      en: { faltaPerfil: 'Add your name, e-mail and phone in the menu before booking.', emailInvalido: 'Enter a valid e-mail.', emailDiferente: 'The two e-mails do not match.', nomeCurto: 'Enter your full name.', telCurto: 'Enter a phone number with country code.', enviando: 'Sending...', erroEnvio: 'We could not send your booking. Check your connection and try again.', origemFalta: 'Fill in the pickup and drop-off address.', dataInvalida: 'The end date cannot be before the start date.', salvo: 'Details saved.' },
+      es: { faltaPerfil: 'Registra tu nombre, correo y teléfono en el menú antes de reservar.', emailInvalido: 'Introduce un correo válido.', emailDiferente: 'Los dos correos no coinciden.', nomeCurto: 'Escribe tu nombre completo.', telCurto: 'Escribe un teléfono con código de país.', enviando: 'Enviando...', erroEnvio: 'No pudimos enviar tu reserva. Revisa la conexión e inténtalo de nuevo.', origemFalta: 'Completa la dirección de recogida y de llegada.', dataInvalida: 'La fecha final no puede ser anterior a la inicial.', salvo: 'Datos guardados.' }
+    };
 
     const botoesIdioma = document.querySelectorAll('#langs button');
     const tabs = document.querySelectorAll('#tabs button');
@@ -455,29 +501,49 @@
     document.getElementById('chegada').addEventListener('input', calcularTotal);
 
     btnReservar.addEventListener('click', async function() {
-      const t = LANG[linguaAtual];
+      const m = MSG[linguaAtual];
       const carro = CARROS[carroSelecionado];
-      
+      const perfil = lerPerfil();
+
+      // ----- validações antes de gastar uma chamada de rede -----
+      if (!perfil.nome || !perfil.email || !perfil.telefone) { mostrarAviso(m.faltaPerfil); return; }
+      if (modoAtual === 'transfer') {
+        const partida = document.getElementById('partida').value.trim();
+        const chegada = document.getElementById('chegada').value.trim();
+        if (!partida || !chegada) { mostrarAviso(m.origemFalta); return; }
+      }
+      const di = document.getElementById('dataInicio').value;
+      const df = document.getElementById('dataFim').value;
+      if (modoAtual === 'daily' && di && df && df < di) { mostrarAviso(m.dataInvalida); return; }
+      mostrarAviso('');
+
       const dados = {
-        cliente: document.getElementById('inputNome').value || 'Cliente não cadastrado',
-        email: document.getElementById('inputEmail').value || 'email@nao.informado',
-        telefone: document.getElementById('inputTel').value || '(00) 00000-0000',
-        pais: document.getElementById('inputPais').value || 'Não informado',
+        cliente: perfil.nome,
+        email: perfil.email,
+        telefone: perfil.telefone,
+        pais: perfil.pais || null,
         servico: document.getElementById('resumoServico').textContent.split(' · ')[0],
         veiculo: carro.nome[linguaAtual],
-        data_servico: document.getElementById('dataInicio').value || new Date().toISOString().split('T')[0],
+        data_servico: di || dataLocalISO(),
         periodo: document.getElementById('resumoDias').textContent,
-        origem: modoAtual === 'daily' ? 'Partida definida' : document.getElementById('partida').value,
-        destino: modoAtual === 'daily' ? '200km inclusos' : document.getElementById('chegada').value,
+        origem: modoAtual === 'daily' ? 'Diária com motorista' : document.getElementById('partida').value.trim(),
+        destino: modoAtual === 'daily' ? '200km inclusos' : document.getElementById('chegada').value.trim(),
         valor: document.getElementById('valorTotal').textContent,
-        voo: document.getElementById('voo').value || null
+        voo: document.getElementById('voo').value.trim() || null
       };
+
+      const textoOriginal = document.getElementById('btnTexto').textContent;
+      btnReservar.disabled = true;
+      document.getElementById('btnTexto').textContent = m.enviando;
 
       try {
         const resultado = await enviarReservaParaAPI(dados);
-        abrirConfirmacao();
+        abrirConfirmacao(resultado.codigo);
       } catch (error) {
-        alert('Erro ao realizar a reserva. Tente novamente.\n\n' + error.message);
+        mostrarAviso(m.erroEnvio);
+      } finally {
+        btnReservar.disabled = false;
+        document.getElementById('btnTexto').textContent = textoOriginal;
       }
     });
 
@@ -506,15 +572,71 @@
       document.getElementById('conteudoReserva').style.display = 'block';
     });
 
-    document.getElementById('salvarPerfil').addEventListener('click', () => { alert('Perfil salvo!'); document.getElementById('btnVoltarMenu').click(); });
-    document.getElementById('btnDeleteConfirm').addEventListener('click', () => { alert('Conta excluída!'); document.getElementById('btnVoltarMenu').click(); });
+    document.getElementById('salvarPerfil').addEventListener('click', () => {
+      const m = MSG[linguaAtual];
+      const nome = document.getElementById('inputNome').value.trim();
+      const email = document.getElementById('inputEmail').value.trim();
+      const emailC = document.getElementById('inputEmailConfirm').value.trim();
+      const tel = document.getElementById('inputTel').value.trim();
+      const pais = document.getElementById('inputPais').value.trim();
+
+      if (nome.length < 3) { alert(m.nomeCurto); return; }
+      if (!emailValido(email)) { alert(m.emailInvalido); return; }
+      if (email.toLowerCase() !== emailC.toLowerCase()) { alert(m.emailDiferente); return; }
+      if (tel.replace(/\D/g, '').length < 8) { alert(m.telCurto); return; }
+
+      localStorage.setItem('vipride_perfil', JSON.stringify({ nome, email, telefone: tel, pais }));
+      mostrarAviso('');
+      alert(m.salvo);
+      document.getElementById('btnVoltarMenu').click();
+    });
+
+    document.getElementById('btnDeleteConfirm').addEventListener('click', () => {
+      const m = MSG[linguaAtual];
+      const digitado = document.getElementById('inputDeleteEmail').value.trim().toLowerCase();
+      const perfil = lerPerfil();
+      if (!perfil.email || digitado !== String(perfil.email).toLowerCase()) { alert(m.emailDiferente); return; }
+      localStorage.removeItem('vipride_perfil');
+      ['inputNome','inputEmail','inputEmailConfirm','inputPais','inputTel','inputDeleteEmail'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('btnVoltarMenu').click();
+    });
+
+    document.getElementById('navLogout').addEventListener('click', () => {
+      localStorage.removeItem('vipride_perfil');
+      ['inputNome','inputEmail','inputEmailConfirm','inputPais','inputTel'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('menuOverlay').classList.remove('aberto');
+      document.getElementById('btnVoltarMenu').click();
+    });
     document.getElementById('toggleNotif').addEventListener('click', function() { this.textContent = this.textContent === 'ON' ? 'OFF' : 'ON'; });
+
+    // Data local (toISOString usa UTC e vira o dia seguinte à noite na Flórida)
+    function dataLocalISO(d = new Date()) {
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    }
 
     const hoje = new Date();
     const amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
-    document.getElementById('dataInicio').value = hoje.toISOString().split('T')[0];
-    document.getElementById('dataFim').value = amanha.toISOString().split('T')[0];
-    aplicarIdioma('pt');
+    const inicioEl = document.getElementById('dataInicio');
+    const fimEl = document.getElementById('dataFim');
+    inicioEl.value = dataLocalISO(hoje);
+    fimEl.value = dataLocalISO(amanha);
+    inicioEl.min = dataLocalISO(hoje);
+    fimEl.min = dataLocalISO(hoje);
+    inicioEl.addEventListener('change', () => { fimEl.min = inicioEl.value; if (fimEl.value < inicioEl.value) fimEl.value = inicioEl.value; calcularTotal(); });
+
+    carregarPerfilNaTela();
+    aplicarIdioma(['pt','en','es'].includes(navigator.language.slice(0,2)) ? navigator.language.slice(0,2) : 'pt');
+
+    // Registro do service worker — necessário para instalar e funcionar offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW não registrado:', err));
+      });
+    }
   </script>
 </body>
 </html>
