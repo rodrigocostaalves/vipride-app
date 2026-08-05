@@ -275,7 +275,20 @@
       .card-solicitacao .arrow { display: none; }
       .detalhes-grid { grid-template-columns: 1fr; }
       .acoes-detalhe { flex-direction: column; }
+      .grid-motorista { grid-template-columns: 1fr !important; }
     }
+
+    /* ===== FORMULÁRIO DO MOTORISTA ===== */
+    #formMotorista { background: var(--navy2); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-top: 18px; }
+    #formMotorista h3 { color: var(--gold); font-size: 15px; margin-bottom: 4px; }
+    #formMotorista .ajuda { color: var(--sky); font-size: 12.5px; margin-bottom: 16px; }
+    .grid-motorista { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-motorista .largo { grid-column: 1 / -1; }
+    .grid-motorista label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sky); margin-bottom: 5px; }
+    .grid-motorista input { width: 100%; background: var(--navy); border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px; color: var(--paper); font-size: 14px; outline: none; font-family: inherit; }
+    .grid-motorista input:focus { border-color: var(--gold); }
+    #btnSalvarMotorista { margin-top: 16px; width: 100%; }
+    #avisoMotorista { display: block; margin-top: 10px; font-size: 12.5px; min-height: 16px; color: var(--sky); }
 
     /* ===== TELA DE ACESSO ===== */
     #telaAcesso { position: fixed; inset: 0; background: var(--navy); display: grid; place-items: center; z-index: 100; padding: 20px; }
@@ -331,6 +344,21 @@
     <h2 style="color: var(--gold); font-family: 'Fraunces'; font-size: 22px; margin-bottom: 16px;" id="detalhesTitulo">Detalhes da Solicitação</h2>
     
     <div class="detalhes-grid" id="detalhesGrid">
+    </div>
+
+    <div id="formMotorista">
+      <h3>🚗 Dados do motorista e do veículo</h3>
+      <p class="ajuda">O cliente vê estas informações em "Minhas viagens" assim que você salvar.</p>
+      <div class="grid-motorista">
+        <div><label>Nome do motorista</label><input type="text" id="mtNome" placeholder="Ex: Michael Anderson"></div>
+        <div><label>Telefone do motorista</label><input type="text" id="mtTelefone" placeholder="+1 (407) 000-0000"></div>
+        <div><label>Veículo</label><input type="text" id="mtModelo" placeholder="Ex: Chevrolet Suburban 2023"></div>
+        <div><label>Cor</label><input type="text" id="mtCor" placeholder="Ex: Preto"></div>
+        <div><label>Placa</label><input type="text" id="mtPlaca" placeholder="Ex: ORL-2024"></div>
+        <div class="largo"><label>Observações para o cliente</label><input type="text" id="mtObs" placeholder="Ex: Ponto de encontro no nível 2 do desembarque"></div>
+      </div>
+      <button class="btn-acao" id="btnSalvarMotorista">💾 Salvar dados do motorista</button>
+      <span id="avisoMotorista"></span>
     </div>
 
     <div class="acoes-detalhe">
@@ -464,6 +492,15 @@
       <div class="detalhes-item"><label>Voo</label><span>${esc(reserva.voo) || 'Nenhum'}</span></div>
     `;
 
+    // Preenche o formulário com o que já foi salvo para esta reserva
+    document.getElementById('mtNome').value = reserva.motorista_nome || '';
+    document.getElementById('mtTelefone').value = reserva.motorista_telefone || '';
+    document.getElementById('mtModelo').value = reserva.veiculo_modelo || '';
+    document.getElementById('mtCor').value = reserva.veiculo_cor || '';
+    document.getElementById('mtPlaca').value = reserva.veiculo_placa || '';
+    document.getElementById('mtObs').value = reserva.motorista_obs || '';
+    document.getElementById('avisoMotorista').textContent = '';
+
     if (reserva.status === 'cancelado') {
       btnConfirmar.style.display = 'none';
       btnCancelar.style.display = 'none';
@@ -525,6 +562,42 @@
     if (!reservaSelecionadaId) return;
     if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
     atualizarStatus(reservaSelecionadaId, 'cancelado');
+  });
+
+  document.getElementById('btnSalvarMotorista').addEventListener('click', async function() {
+    if (!reservaSelecionadaId) return;
+    const aviso = document.getElementById('avisoMotorista');
+    const btn = this;
+    const corpo = {
+      motorista_nome: document.getElementById('mtNome').value.trim(),
+      motorista_telefone: document.getElementById('mtTelefone').value.trim(),
+      veiculo_modelo: document.getElementById('mtModelo').value.trim(),
+      veiculo_cor: document.getElementById('mtCor').value.trim(),
+      veiculo_placa: document.getElementById('mtPlaca').value.trim(),
+      motorista_obs: document.getElementById('mtObs').value.trim()
+    };
+
+    btn.disabled = true;
+    aviso.style.color = 'var(--sky)';
+    aviso.textContent = 'Salvando...';
+
+    try {
+      const r = await fetch(`${API_URL}/${encodeURIComponent(reservaSelecionadaId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getToken() },
+        body: JSON.stringify(corpo)
+      });
+      if (r.status === 401) { bloquearAcesso('Token inválido ou expirado.'); return; }
+      if (!r.ok) throw new Error('falha');
+      aviso.style.color = 'var(--ok, #4CD18C)';
+      aviso.textContent = 'Salvo. O cliente já consegue ver estes dados.';
+      await carregarReservas();
+    } catch (e) {
+      aviso.style.color = 'var(--danger)';
+      aviso.textContent = 'Não foi possível salvar. Tente de novo.';
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   inputBusca.addEventListener('input', renderizarLista);

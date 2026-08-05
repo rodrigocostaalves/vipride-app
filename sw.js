@@ -5,7 +5,7 @@
    - worker.js  -> roda no Cloudflare (API + banco D1)
    ============================================================ */
 
-const VERSAO = 'vipride-v1.0.1';
+const VERSAO = 'vipride-v1.2.0';
 const CACHE_SHELL = `shell-${VERSAO}`;
 
 // Arquivos essenciais para o app abrir mesmo sem internet
@@ -13,6 +13,8 @@ const SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './privacidade.html',
+  './termos.html',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-192.png',

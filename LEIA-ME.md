@@ -1,106 +1,87 @@
-# VipRide Orlando — o que mudou e o que fazer agora
+# VipRide Orlando — Fase 1 (somente Diária)
 
-## 1. O motivo do PWABuilder não puxar nome nem ícone
+## O QUE VOCÊ PRECISA FAZER
 
-No `index.html` a linha do manifest estava assim:
+### 1. Número do WhatsApp/SMS
+No `index.html`, procure `CONTATO_TELEFONE` (perto do início do script)
+e troque `10000000000` pelo número real. Só dígitos, com código do país:
 
-```html
-<link rel="manifest" href=manifest.json">
-```
+    const CONTATO_TELEFONE = '14071234567';
 
-Faltava a aspa de abertura. O navegador leu o endereço como `manifest.json"`
-(com a aspa no final), que não existe no servidor. Resultado: o manifest nunca
-carregava, e o PWABuilder não encontrava `name`, `short_name` nem `icons`.
-Agora está `href="manifest.json"`.
+### 2. E-mail nas páginas legais
+`privacidade.html` e `termos.html` usam `suporte@viprideorlando.com`.
+Se esse endereço não é seu, troque nos dois arquivos antes de publicar —
+a Play Store verifica se o contato funciona.
 
-## 2. Arquivos que vão para o GitHub Pages (pasta do site)
+### 3. NÃO precisa mais do OpenRouteService
+Se você chegou a criar o secret `ORS_API_KEY` no Cloudflare, pode apagar.
+O código não usa mais.
 
-```
-index.html
-dashboard.html
-manifest.json
-sw.js                     <- novo (service worker)
-icon-192.png
-icon-512.png
-icon-maskable-192.png     <- novo
-icon-maskable-512.png     <- novo
-```
+## ARQUIVOS
 
-O `worker.js` NÃO vai para o GitHub — ele é colado no editor do Cloudflare.
+GitHub Pages (raiz do site):
+index.html, dashboard.html, privacidade.html, termos.html,
+manifest.json, sw.js, os 4 ícones
 
-## 3. Antes de gerar o APK no PWABuilder
+Repositório (deploy do Worker):
+worker.js
 
-1. Suba tudo para o repositório e espere o GitHub Pages publicar.
-2. Abra `https://rodrigocostaalves.github.io/vipride-app/manifest.json` no
-   navegador. Se aparecer o JSON, está certo.
-3. No PWABuilder, use a URL com a barra no final:
-   `https://rodrigocostaalves.github.io/vipride-app/`
-4. Se ainda mostrar dados antigos, é cache do PWABuilder — troque a URL para
-   `.../?v=2` uma vez.
+## O QUE MUDOU NESTA VERSÃO
 
-Para publicar na Play Store, o PWABuilder também vai pedir pelo menos uma
-captura de tela do app (1080x1920). Tire uma do celular e adicione depois no
-`manifest.json` no campo `screenshots`.
+### Translado removido
+- Saíram as abas Diária/Translado — o app abre direto na diária
+- Saíram os campos de partida e chegada, o controlador de horas
+  e o cálculo por km
+- Saiu o mapa e a biblioteca Leaflet (o app ficou mais leve e não
+  depende mais de tiles do OpenStreetMap)
+- Saiu o endpoint /rota do Worker e toda a integração com o
+  OpenRouteService
+- O texto do topo agora diz "Reserve sua diária com conforto"
 
-## 4. Cloudflare — configuração obrigatória
+### Campo de voo
+Continua no app, agora dentro da diária. Tirei a frase
+"monitoraremos seu voo em tempo real", que prometia algo que o app
+não faz. No lugar: "Se você chega de avião, informe o voo para
+ajustarmos o horário do motorista".
 
-No painel do Worker, em Settings → Variables:
+## O QUE JÁ ESTAVA PRONTO E CONTINUA
 
-- **Secret** `ADMIN_TOKEN` = uma senha longa que só você conhece.
-  É o que protege a lista de clientes.
-- **Variável** `ALLOWED_ORIGINS` = `https://rodrigocostaalves.github.io`
-- **Binding D1** `DB` = seu banco (já existia).
+### Minhas viagens
+- Item no menu, lista as reservas feitas naquele aparelho
+- Enquanto o motorista não for definido: aviso dos 5 dias
+- Depois: nome, telefone, veículo, cor, placa e observações
+- A consulta exige código + e-mail juntos, então ninguém varre
+  as reservas dos outros chutando códigos
 
-Depois disso, ao abrir o `dashboard.html` vai aparecer uma tela pedindo o token.
+### Painel — dados do motorista
+- Formulário dentro dos detalhes da reserva
+- Campos: nome, telefone, veículo, cor, placa e observações
+- Salvou, o cliente já vê em "Minhas viagens"
 
-## 5. Correções aplicadas
+### Falar conosco
+- Caixa de mensagem com dois botões: WhatsApp ou SMS
+- A mensagem já vai montada com o nome do cliente e o código
+  da última reserva dele
 
-**index.html**
-- Link do manifest corrigido; metas de tema, ícone Apple e cor da barra.
-- Registro do `sw.js` (o app agora abre offline e é instalável de verdade).
-- Perfil salvo no aparelho (`localStorage`) — antes o "Salvar dados" só dava
-  um alerta e a reserva ia para o banco como "Cliente não cadastrado".
-- Validação antes de enviar: nome, e-mail (com conferência dos dois campos),
-  telefone, endereços no translado e datas coerentes.
-- Botão "Reservar" trava enquanto envia — evita reserva duplicada no toque duplo.
-- A tela de confirmação mostra o **código real** devolvido pela API.
-- Removido o alerta falso de "lembretes agendados" (nada era agendado).
-- Datas usam o fuso local; antes, depois das 20h na Flórida, o app já marcava
-  o dia seguinte por causa do UTC.
-- Campos de data não aceitam mais datas passadas.
-- Botão "Sair" e "Excluir perfil" agora funcionam de fato.
-- Atribuição do OpenStreetMap no mapa (exigência da licença dos tiles).
+### Páginas legais
+- privacidade.html e termos.html, no visual do app
+- Já ajustadas para o serviço só de diária
+- São modelos escritos a partir do funcionamento real do app.
+  Cláusula de cancelamento e limite de responsabilidade têm
+  efeito jurídico — vale revisão de advogado na Flórida.
 
-**worker.js**
-- `GET /reservas` e `PATCH` agora exigem o `X-Admin-Token`. Antes, qualquer
-  pessoa com o endereço do Worker baixava nome, e-mail e telefone de todos
-  os clientes.
-- CORS restrito à sua origem em vez de `*`.
-- Validação dos campos recebidos, com limite de tamanho.
-- `/debug` protegido.
-- Código da reserva gerado com `crypto` em vez de `Math.random`.
-- `CREATE TABLE` sai do caminho de toda requisição.
-- Mensagens de erro genéricas para o cliente (sem expor detalhes do banco).
+## COMO TESTAR
 
-**dashboard.html**
-- Tela de acesso com token.
-- **Correção de XSS**: os dados vinham do banco direto para `innerHTML`. Um
-  cliente podia se cadastrar com um nome contendo código e ele rodaria no seu
-  painel. Agora tudo passa por escape.
-- Busca não quebra mais com campos vazios.
-- Atualiza a lista sozinha a cada 30 segundos.
+1. Abra o app — deve aparecer só a diária, sem abas e sem mapa
+2. Escolha o veículo e as datas, veja o total mudar
+3. Cadastre o perfil no menu e faça uma reserva
+4. Menu → Minhas viagens: aparece com o aviso dos 5 dias
+5. No dashboard, abra a reserva, preencha o motorista e salve
+6. Volte em Minhas viagens: os dados do motorista aparecem
 
-## 6. O que ainda está pendente
+## PENDENTE (Fase 2 e 3)
 
-- **O preço do translado é fixo.** `kmEstimado` está travado em 20 km; os
-  endereços digitados e o mapa não influenciam o valor. Precisa de uma API de
-  rotas (Google Directions, Mapbox ou OpenRouteService) para calcular de verdade.
-- **Nenhum lembrete é enviado.** Precisa de um Cron Trigger no Cloudflare + um
-  serviço de e-mail ou WhatsApp Business.
-- **O motorista é fixo no código** ("Michael Anderson", placa ORL-2024).
-- **O monitoramento de voo não existe** — o campo é salvo, mas nada é feito.
-- **Termos de Uso e Política de Privacidade** estão como `#`. A Play Store
-  exige uma política de privacidade acessível para apps que coletam e-mail
-  e telefone.
-- Os tiles do OpenStreetMap são gratuitos mas têm política de uso restritiva
-  para aplicativos. Com volume real, migre para Mapbox ou MapTiler.
+- E-mail com os detalhes ao reservar
+- Verificação de e-mail
+- Push quando os dados do motorista forem preenchidos
+- Captura de tela 1080x1920 no manifest, exigida pela Play Store

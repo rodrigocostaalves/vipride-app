@@ -44,7 +44,7 @@
     {
       "name": "Nova reserva",
       "short_name": "Reservar",
-      "url": "./?tab=daily",
+      "url": "./",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
